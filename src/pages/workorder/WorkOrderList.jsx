@@ -13,19 +13,25 @@ const defaultForm = {
   status: 'WAIT', line: '', remark: '', useYn: 'Y',
 };
 
+const defaultSearch = { startDate: today(), endDate: today(), status: '', confirmYn: '' };
+
 export default function WorkOrderList() {
   const [rows, setRows] = useState([]);
   const [items, setItems] = useState([]);
+  const [search, setSearch] = useState(defaultSearch);
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(defaultForm);
   const [editId, setEditId] = useState(null);
   const gridRef = useRef();
 
-  const load = () => workOrderApi.getAll().then((r) => setRows(r.data));
+  const load = (params = search) => workOrderApi.getAll(params).then((r) => setRows(r.data));
   useEffect(() => {
     load();
     itemApi.getAll().then((r) => setItems(r.data.filter((i) => i.useYn === 'Y')));
   }, []);
+
+  const sf = (key) => (e) => setSearch((s) => ({ ...s, [key]: e.target.value }));
+  const handleSearch = () => load(search);
 
   const openCreate = () => { setForm(defaultForm); setEditId(null); setModal(true); };
   const openEdit = (row) => {
@@ -49,7 +55,7 @@ export default function WorkOrderList() {
     if (editId) await workOrderApi.update(editId, payload);
     else await workOrderApi.create(payload);
     setModal(false);
-    load();
+    load(search);
   };
 
   const handleDelete = async () => {
@@ -57,21 +63,21 @@ export default function WorkOrderList() {
     if (!sel.length) return alert('삭제할 행을 선택하세요.');
     if (!window.confirm(`${sel.length}건을 삭제하시겠습니까?`)) return;
     await Promise.all(sel.map((r) => workOrderApi.delete(r.id)));
-    load();
+    load(search);
   };
 
   const handleConfirm = async () => {
     const sel = gridRef.current.api.getSelectedRows();
     if (!sel.length) return alert('행을 선택하세요.');
     await Promise.all(sel.map((r) => workOrderApi.confirm(r.id)));
-    load();
+    load(search);
   };
 
   const handleCancelConfirm = async () => {
     const sel = gridRef.current.api.getSelectedRows();
     if (!sel.length) return alert('행을 선택하세요.');
     await Promise.all(sel.map((r) => workOrderApi.cancelConfirm(r.id)));
-    load();
+    load(search);
   };
 
   const statusBadge = (status) => {
@@ -117,8 +123,29 @@ export default function WorkOrderList() {
           <button className="btn btn-success" onClick={handleConfirm}>확정</button>
           <button className="btn btn-warning" onClick={handleCancelConfirm}>확정취소</button>
           <button className="btn btn-danger" onClick={handleDelete}>삭제</button>
-          <button className="btn btn-secondary" onClick={load}>새로고침</button>
+          <button className="btn btn-secondary" onClick={() => load(search)}>새로고침</button>
         </div>
+      </div>
+
+      <div className="search-bar">
+        <label>작업일자</label>
+        <input type="date" value={search.startDate} onChange={sf('startDate')} />
+        <span>~</span>
+        <input type="date" value={search.endDate} onChange={sf('endDate')} />
+        <label>상태</label>
+        <select value={search.status} onChange={sf('status')}>
+          <option value="">전체</option>
+          <option value="WAIT">대기</option>
+          <option value="IN_PROGRESS">진행중</option>
+          <option value="DONE">완료</option>
+        </select>
+        <label>확정여부</label>
+        <select value={search.confirmYn} onChange={sf('confirmYn')}>
+          <option value="">전체</option>
+          <option value="N">미확정</option>
+          <option value="Y">확정</option>
+        </select>
+        <button className="btn btn-primary" onClick={handleSearch}>조회</button>
       </div>
 
       <div className="ag-theme-alpine grid-wrap">

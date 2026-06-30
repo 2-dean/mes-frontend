@@ -1,69 +1,139 @@
-import { useEffect, useState, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AgGridReact } from 'ag-grid-react';
 import { ModuleRegistry, AllCommunityModule } from 'ag-grid-community';
 import { itemApi } from '../../api/itemApi';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
-const defaultItem = {
-  itemCode: '', itemName: '', spec: '', unit: '', unitPrice: 0, incentiveRate: 0, useYn: 'Y',
-};
-
 export default function ItemList() {
   const [rows, setRows] = useState([]);
-  const [modal, setModal] = useState(false);
-  const [form, setForm] = useState(defaultItem);
-  const [editId, setEditId] = useState(null);
+  const [hasChanges, setHasChanges] = useState(false);
   const gridRef = useRef();
 
-  const load = () => itemApi.getAll().then((r) => setRows(r.data));
+  const load = useCallback(async () => {
+    const r = await itemApi.getAll();
+    setRows(r.data);
+    setHasChanges(false);
+  }, []);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [load]);
 
-  const openCreate = () => { setForm(defaultItem); setEditId(null); setModal(true); };
-  const openEdit = (row) => { setForm({ ...row }); setEditId(row.id); setModal(true); };
+  const handleAddRow = () => {
+    const newRow = {
+      _rowId: `_new_${Date.now()}`,
+      _isNew: true,
+      itemCode: '', itemName: '', spec: '', unit: '', unitPrice: 0, incentiveRate: 0, useYn: 'Y',
+    };
+    setRows((prev) => [newRow, ...prev]);
+    setHasChanges(true);
+    setTimeout(() => {
+      gridRef.current?.api?.startEditingCell({ rowIndex: 0, colKey: 'itemCode' });
+    }, 100);
+  };
 
   const handleSave = async () => {
-    if (!form.itemCode || !form.itemName) return alert('품목코드/품목명은 필수입니다.');
-    if (editId) await itemApi.update(editId, form);
-    else await itemApi.create(form);
-    setModal(false);
-    load();
+    gridRef.current.api.stopEditing();
+
+    const allRows = [];
+    gridRef.current.api.forEachNode((node) => allRows.push(node.data));
+
+    const newRows = allRows.filter((r) => r._isNew);
+    const dirtyRows = allRows.filter((r) => !r._isNew && r._isDirty);
+
+    if (!newRows.length && !dirtyRows.length) return alert('변경된 내용이 없습니다.');
+
+    if ([...newRows, ...dirtyRows].some((r) => !r.itemCode || !r.itemName)) {
+      return alert('품목코드/품목명은 필수입니다.');
+    }
+
+    try {
+      await Promise.all([
+        ...newRows.map(({ _rowId, _isNew, ...data }) => itemApi.create(data)),
+        ...dirtyRows.map(({ _isDirty, ...data }) => itemApi.update(data.id, data)),
+      ]);
+      await load();
+    } catch {
+      alert('저장 중 오류가 발생했습니다.');
+    }
   };
 
   const handleDelete = async () => {
     const selected = gridRef.current.api.getSelectedRows();
     if (!selected.length) return alert('삭제할 행을 선택하세요.');
     if (!window.confirm(`${selected.length}건을 삭제하시겠습니까?`)) return;
-    await Promise.all(selected.map((r) => itemApi.delete(r.id)));
+
+    const existing = selected.filter((r) => !r._isNew);
+    const unsaved = selected.filter((r) => r._isNew);
+
+    try {
+      if (existing.length) {
+        await Promise.all(existing.map((r) => itemApi.delete(r.id)));
+        await load();
+      } else {
+        const ids = new Set(unsaved.map((r) => r._rowId));
+        setRows((prev) => prev.filter((r) => !r._isNew || !ids.has(r._rowId)));
+      }
+    } catch {
+      alert('삭제 중 오류가 발생했습니다.');
+    }
+  };
+
+  const handleRefresh = () => {
+    if (hasChanges && !window.confirm('저장하지 않은 변경사항이 있습니다. 새로고침하시겠습니까?')) return;
     load();
   };
 
-  const colDefs = [
-    { checkboxSelection: true, width: 50, headerCheckboxSelection: true },
-    { field: 'itemCode', headerName: '품목코드', width: 130 },
-    { field: 'itemName', headerName: '품목명', flex: 1 },
-    { field: 'spec', headerName: '규격', width: 120 },
-    { field: 'unit', headerName: '단위', width: 80 },
-    { field: 'unitPrice', headerName: '단가', width: 110, valueFormatter: (p) => p.value?.toLocaleString() },
-    { field: 'incentiveRate', headerName: '인센티브율(%)', width: 130 },
-    { field: 'useYn', headerName: '사용여부', width: 90 },
+  const onCellValueChanged = useCallback((params) => {
+    if (!params.data._isNew) {
+      params.data._isDirty = true;
+      params.api.redrawRows({ rowNodes: [params.node] });
+    }
+    setHasChanges(true);
+  }, []);
+
+  const getRowId = useCallback((params) => {
+    return params.data._isNew ? params.data._rowId : String(params.data.id);
+  }, []);
+
+  const rowClassRules = useMemo(() => ({
+    'row-new': (params) => !!params.data._isNew,
+    'row-dirty': (params) => !params.data._isNew && !!params.data._isDirty,
+  }), []);
+
+  const colDefs = useMemo(() => [
+    { checkboxSelection: true, headerCheckboxSelection: true, width: 50, editable: false },
     {
-      headerName: '수정', width: 80,
-      cellRenderer: (p) => (
-        <button className="btn-grid" onClick={() => openEdit(p.data)}>수정</button>
-      ),
+      field: 'itemCode', headerName: '품목코드 *', width: 130,
+      editable: (params) => !!params.data._isNew,
     },
-  ];
+    { field: 'itemName', headerName: '품목명 *', flex: 1, editable: true },
+    { field: 'spec', headerName: '규격', width: 120, editable: true },
+    { field: 'unit', headerName: '단위', width: 80, editable: true },
+    {
+      field: 'unitPrice', headerName: '단가', width: 110, editable: true,
+      valueFormatter: (p) => p.value?.toLocaleString(),
+      valueParser: (p) => Number(p.newValue) || 0,
+    },
+    {
+      field: 'incentiveRate', headerName: '인센티브율(%)', width: 130, editable: true,
+      valueParser: (p) => Number(p.newValue) || 0,
+    },
+    {
+      field: 'useYn', headerName: '사용여부', width: 90, editable: true,
+      cellEditor: 'agSelectCellEditor',
+      cellEditorParams: { values: ['Y', 'N'] },
+    },
+  ], []);
 
   return (
     <div className="page-wrap">
       <div className="page-toolbar">
         <h2 className="page-title">품목관리</h2>
         <div className="toolbar-btns">
-          <button className="btn btn-primary" onClick={openCreate}>등록</button>
+          <button className="btn btn-primary" onClick={handleAddRow}>행 추가</button>
+          <button className="btn btn-success" onClick={handleSave} disabled={!hasChanges}>저장</button>
           <button className="btn btn-danger" onClick={handleDelete}>삭제</button>
-          <button className="btn btn-secondary" onClick={load}>새로고침</button>
+          <button className="btn btn-secondary" onClick={handleRefresh}>새로고침</button>
         </div>
       </div>
 
@@ -73,58 +143,15 @@ export default function ItemList() {
           rowData={rows}
           columnDefs={colDefs}
           rowSelection="multiple"
+          getRowId={getRowId}
+          onCellValueChanged={onCellValueChanged}
+          rowClassRules={rowClassRules}
+          singleClickEdit
+          stopEditingWhenCellsLoseFocus
           pagination
           paginationPageSize={20}
         />
       </div>
-
-      {modal && (
-        <div className="modal-overlay" onClick={() => setModal(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>{editId ? '품목 수정' : '품목 등록'}</h3>
-              <button className="modal-close" onClick={() => setModal(false)}>×</button>
-            </div>
-            <div className="modal-body">
-              <div className="form-row">
-                <label>품목코드 *</label>
-                <input value={form.itemCode} onChange={(e) => setForm({ ...form, itemCode: e.target.value })} disabled={!!editId} />
-              </div>
-              <div className="form-row">
-                <label>품목명 *</label>
-                <input value={form.itemName} onChange={(e) => setForm({ ...form, itemName: e.target.value })} />
-              </div>
-              <div className="form-row">
-                <label>규격</label>
-                <input value={form.spec || ''} onChange={(e) => setForm({ ...form, spec: e.target.value })} />
-              </div>
-              <div className="form-row">
-                <label>단위</label>
-                <input value={form.unit || ''} onChange={(e) => setForm({ ...form, unit: e.target.value })} />
-              </div>
-              <div className="form-row">
-                <label>단가</label>
-                <input type="number" value={form.unitPrice} onChange={(e) => setForm({ ...form, unitPrice: Number(e.target.value) })} />
-              </div>
-              <div className="form-row">
-                <label>인센티브율(%)</label>
-                <input type="number" value={form.incentiveRate} onChange={(e) => setForm({ ...form, incentiveRate: Number(e.target.value) })} />
-              </div>
-              <div className="form-row">
-                <label>사용여부</label>
-                <select value={form.useYn} onChange={(e) => setForm({ ...form, useYn: e.target.value })}>
-                  <option value="Y">Y</option>
-                  <option value="N">N</option>
-                </select>
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button className="btn btn-primary" onClick={handleSave}>저장</button>
-              <button className="btn btn-secondary" onClick={() => setModal(false)}>취소</button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

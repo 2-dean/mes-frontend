@@ -8,15 +8,19 @@ import Login from './pages/Login';
 import Dashboard from './pages/dashboard/Dashboard';
 import ItemList from './pages/item/ItemList';
 import ClientList from './pages/client/ClientList';
+import CommonCodeMgmt from './pages/commoncode/CommonCodeMgmt';
 import WorkOrderList from './pages/workorder/WorkOrderList';
 import ProdResult from './pages/prodresult/ProdResult';
 import DailyClose from './pages/dailyclose/DailyClose';
 import Incentive from './pages/incentive/Incentive';
+import UserMgmt from './pages/user/UserMgmt';
 
 const PAGE_MAP = {
   dashboard: { label: '대시보드', icon: '📊', component: Dashboard },
   item: { label: '품목관리', icon: '📦', component: ItemList },
   client: { label: '거래처관리', icon: '🏢', component: ClientList },
+  commoncode: { label: '공통코드관리', icon: '🗂️', component: CommonCodeMgmt },
+  user: { label: '사용자관리', icon: '👤', component: UserMgmt },
   workorder: { label: '작업지시', icon: '📋', component: WorkOrderList },
   prodresult: { label: '생산실적', icon: '🏭', component: ProdResult },
   dailyclose: { label: '작업실적현황', icon: '📅', component: DailyClose },
@@ -45,23 +49,38 @@ function MainLayout() {
     }
   };
 
-  const ActiveComponent = PAGE_MAP[activeTabId]?.component;
+  const handleCloseAll = () => {
+    setTabs((prev) => prev.filter((t) => t.id === 'dashboard'));
+    setActiveTabId('dashboard');
+  };
 
   return (
     <div className="app-layout">
       <Header />
       <div className="app-body">
         <Sidebar activeTab={activeTabId} onMenuClick={handleMenuClick} />
+
         <div className="content-area">
           <TabManager
             tabs={tabs}
             activeTabId={activeTabId}
             onTabClick={setActiveTabId}
             onTabClose={handleTabClose}
+            onCloseAll={handleCloseAll}
           />
           <div className="page-content">
-            {ActiveComponent ? <ActiveComponent /> : (
+            {tabs.length === 0 ? (
               <div className="empty-state">메뉴를 선택하세요.</div>
+            ) : (
+              tabs.map((tab) => {
+                const Comp = PAGE_MAP[tab.id]?.component;
+                if (!Comp) return null;
+                return (
+                  <div key={tab.id} style={{ display: tab.id === activeTabId ? 'block' : 'none' }}>
+                    <Comp />
+                  </div>
+                );
+              })
             )}
           </div>
         </div>

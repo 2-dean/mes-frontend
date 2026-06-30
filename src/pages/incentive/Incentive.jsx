@@ -4,6 +4,7 @@ import { ModuleRegistry, AllCommunityModule } from 'ag-grid-community';
 import { prodIncentiveApi } from '../../api/prodIncentiveApi';
 import { monthCloseApi } from '../../api/monthCloseApi';
 import { useAuth } from '../../context/AuthContext';
+import { useMultiGridDirty } from '../../hooks/useMultiGridDirty';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -14,6 +15,7 @@ export default function Incentive() {
   const [incentives, setIncentives] = useState([]);
   const [closes, setCloses] = useState([]);
   const [yearMonth, setYearMonth] = useState(thisMonth());
+  const { makeGuard } = useMultiGridDirty(2);
 
   const loadIncentives = () => prodIncentiveApi.getAll().then((r) => setIncentives(r.data));
   const loadCloses = () => monthCloseApi.getAll().then((r) => setCloses(r.data));
@@ -99,23 +101,27 @@ export default function Incentive() {
       </div>
 
       <h3 className="section-title">인센티브 목록</h3>
-      <div className="ag-theme-alpine grid-wrap" style={{ height: 300 }}>
-        <AgGridReact
-          rowData={filtered}
-          columnDefs={incColDefs}
-          pagination
-          paginationPageSize={15}
-        />
+      <div onMouseDownCapture={makeGuard(0)}>
+        <div className="ag-theme-alpine grid-wrap" style={{ height: 300 }}>
+          <AgGridReact
+            rowData={filtered}
+            columnDefs={incColDefs}
+            pagination
+            paginationPageSize={15}
+          />
+        </div>
       </div>
 
       <h3 className="section-title" style={{ marginTop: 20 }}>월마감 이력</h3>
-      <div className="ag-theme-alpine grid-wrap" style={{ height: 200 }}>
-        <AgGridReact
-          rowData={closes}
-          columnDefs={closeColDefs}
-          pagination
-          paginationPageSize={10}
-        />
+      <div onMouseDownCapture={makeGuard(1)}>
+        <div className="ag-theme-alpine grid-wrap" style={{ height: 200 }}>
+          <AgGridReact
+            rowData={closes}
+            columnDefs={closeColDefs}
+            pagination
+            paginationPageSize={10}
+          />
+        </div>
       </div>
     </div>
   );

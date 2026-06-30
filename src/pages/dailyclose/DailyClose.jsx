@@ -4,6 +4,7 @@ import { ModuleRegistry, AllCommunityModule } from 'ag-grid-community';
 import { prodResultApi } from '../../api/prodResultApi';
 import { dailyCloseApi } from '../../api/dailyCloseApi';
 import { useAuth } from '../../context/AuthContext';
+import { useMultiGridDirty } from '../../hooks/useMultiGridDirty';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -15,6 +16,7 @@ export default function DailyClose() {
   const [closes, setCloses] = useState([]);
   const [closeDate, setCloseDate] = useState(today());
   const gridRef = useRef();
+  const { makeGuard } = useMultiGridDirty(2);
 
   const loadResults = () => prodResultApi.getAll().then((r) => setResults(r.data));
   const loadCloses = () => dailyCloseApi.getAll().then((r) => setCloses(r.data));
@@ -82,24 +84,28 @@ export default function DailyClose() {
       </div>
 
       <h3 className="section-title">작업실적 목록</h3>
-      <div className="ag-theme-alpine grid-wrap" style={{ height: 300 }}>
-        <AgGridReact
-          ref={gridRef}
-          rowData={results}
-          columnDefs={resultColDefs}
-          pagination
-          paginationPageSize={15}
-        />
+      <div onMouseDownCapture={makeGuard(0)}>
+        <div className="ag-theme-alpine grid-wrap" style={{ height: 300 }}>
+          <AgGridReact
+            ref={gridRef}
+            rowData={results}
+            columnDefs={resultColDefs}
+            pagination
+            paginationPageSize={15}
+          />
+        </div>
       </div>
 
       <h3 className="section-title" style={{ marginTop: 20 }}>일마감 이력</h3>
-      <div className="ag-theme-alpine grid-wrap" style={{ height: 200 }}>
-        <AgGridReact
-          rowData={closes}
-          columnDefs={closeColDefs}
-          pagination
-          paginationPageSize={10}
-        />
+      <div onMouseDownCapture={makeGuard(1)}>
+        <div className="ag-theme-alpine grid-wrap" style={{ height: 200 }}>
+          <AgGridReact
+            rowData={closes}
+            columnDefs={closeColDefs}
+            pagination
+            paginationPageSize={10}
+          />
+        </div>
       </div>
     </div>
   );
