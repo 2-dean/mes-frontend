@@ -1,9 +1,11 @@
+import { useAuth } from '../context/AuthContext';
+
 const MENU_ITEMS = [
   { type: 'category', label: '기준정보' },
   { id: 'item', label: '품목관리', icon: '📦' },
   { id: 'client', label: '거래처관리', icon: '🏢' },
-  { id: 'commoncode', label: '공통코드관리', icon: '🗂️' },
-  { id: 'user', label: '사용자관리', icon: '👤' },
+  { id: 'commoncode', label: '공통코드관리', icon: '🗂️', adminOnly: true },
+  { id: 'user', label: '사용자관리', icon: '👤', adminOnly: true },
   { type: 'category', label: '생산관리' },
   { id: 'workorder', label: '작업지시', icon: '📋' },
   { id: 'prodresult', label: '생산실적', icon: '🏭' },
@@ -13,11 +15,15 @@ const MENU_ITEMS = [
 ];
 
 export default function Sidebar({ activeTab, onMenuClick }) {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
+  const visibleItems = MENU_ITEMS.filter((item) => !item.adminOnly || isAdmin);
+
   return (
     <aside className="sidebar">
       <div className="sidebar-logo" onClick={() => onMenuClick({ id: 'dashboard' })} style={{ cursor: 'pointer' }}>MES</div>
       <nav className="sidebar-nav">
-        {MENU_ITEMS.map((item, idx) => {
+        {visibleItems.map((item, idx) => {
           if (item.type === 'category') {
             return (
               <div key={idx} className="sidebar-category">{item.label}</div>

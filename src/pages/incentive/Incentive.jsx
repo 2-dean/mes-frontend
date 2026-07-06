@@ -12,6 +12,7 @@ const thisMonth = () => new Date().toISOString().slice(0, 7);
 
 export default function Incentive() {
   const { user } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
   const [incentives, setIncentives] = useState([]);
   const [closes, setCloses] = useState([]);
   const [yearMonth, setYearMonth] = useState(thisMonth());
@@ -89,8 +90,8 @@ export default function Incentive() {
             onChange={(e) => setYearMonth(e.target.value)}
             style={{ marginRight: 8 }}
           />
-          <button className="btn btn-primary" onClick={handleClose}>월마감</button>
-          <button className="btn btn-warning" onClick={handleCancelClose}>마감취소</button>
+          {isAdmin && <button className="btn btn-primary" onClick={handleClose}>월마감</button>}
+          {isAdmin && <button className="btn btn-warning" onClick={handleCancelClose}>마감취소</button>}
           <button className="btn btn-secondary" onClick={() => { loadIncentives(); loadCloses(); }}>새로고침</button>
         </div>
       </div>

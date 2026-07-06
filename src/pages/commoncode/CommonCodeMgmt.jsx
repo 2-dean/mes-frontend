@@ -2,12 +2,15 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AgGridReact } from 'ag-grid-react';
 import { ModuleRegistry, AllCommunityModule } from 'ag-grid-community';
 import { commonCodeApi } from '../../api/commonCodeApi';
+import { useAuth } from '../../context/AuthContext';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
 const defaultGroupForm = { groupCode: '', groupName: '', description: '', useYn: 'Y' };
 
 export default function CommonCodeMgmt() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
   const [groups, setGroups] = useState([]);
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [groupModal, setGroupModal] = useState(false);
@@ -201,7 +204,7 @@ export default function CommonCodeMgmt() {
         <div className="code-group-panel">
           <div className="code-group-header">
             <span>그룹코드</span>
-            <button className="btn btn-primary btn-sm" onClick={openGroupCreate}>+ 추가</button>
+            {isAdmin && <button className="btn btn-primary btn-sm" onClick={openGroupCreate}>+ 추가</button>}
           </div>
           <div className="code-group-list">
             {groups.map((group) => (
@@ -214,10 +217,12 @@ export default function CommonCodeMgmt() {
                   <span className="code-group-code">{group.groupCode}</span>
                   <span className="code-group-name">{group.groupName}</span>
                 </div>
-                <div className="code-group-actions">
-                  <button onClick={(e) => openGroupEdit(group, e)} title="수정">✏</button>
-                  <button onClick={(e) => handleGroupDelete(group, e)} title="삭제">✕</button>
-                </div>
+                {isAdmin && (
+                  <div className="code-group-actions">
+                    <button onClick={(e) => openGroupEdit(group, e)} title="수정">✏</button>
+                    <button onClick={(e) => handleGroupDelete(group, e)} title="삭제">✕</button>
+                  </div>
+                )}
               </div>
             ))}
             {groups.length === 0 && (
@@ -235,9 +240,9 @@ export default function CommonCodeMgmt() {
                   {selectedGroup.groupCode} · {selectedGroup.groupName}
                 </span>
                 <div className="toolbar-btns">
-                  <button className="btn btn-primary" onClick={handleAddCode}>행 추가</button>
-                  <button className="btn btn-success" onClick={handleCodeSave} disabled={!hasChanges}>저장</button>
-                  <button className="btn btn-danger" onClick={handleCodeDelete}>삭제</button>
+                  {isAdmin && <button className="btn btn-primary" onClick={handleAddCode}>행 추가</button>}
+                  {isAdmin && <button className="btn btn-success" onClick={handleCodeSave} disabled={!hasChanges}>저장</button>}
+                  {isAdmin && <button className="btn btn-danger" onClick={handleCodeDelete}>삭제</button>}
                   <button className="btn btn-secondary" onClick={handleCodeRefresh}>새로고침</button>
                 </div>
               </div>

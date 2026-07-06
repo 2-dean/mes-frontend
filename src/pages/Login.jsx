@@ -52,6 +52,10 @@ export default function Login() {
             로그인
           </button>
         </form>
+        <div className="login-test-accounts">
+          <p>관리자: admin / admin123 (모든 기능)</p>
+          <p>게스트: guest / guest123 (조회만 가능)</p>
+        </div>
       </div>
     </div>
   );

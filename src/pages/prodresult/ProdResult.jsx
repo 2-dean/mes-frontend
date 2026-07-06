@@ -9,6 +9,7 @@ ModuleRegistry.registerModules([AllCommunityModule]);
 
 export default function ProdResult() {
   const { user } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
   const [workOrders, setWorkOrders] = useState([]);
   const [rows, setRows] = useState([]);
   const [selectedWo, setSelectedWo] = useState('');
@@ -21,7 +22,7 @@ export default function ProdResult() {
 
   useEffect(() => {
     workOrderApi.getAll().then((r) =>
-      setWorkOrders(r.data.filter((w) => w.confirmYn === 'Y' && w.useYn === 'Y'))
+      setWorkOrders(r.data.filter((w) => w.status === 'IN_PROGRESS'))
     );
     prodResultApi.getAll().then((r) => setRows(r.data));
   }, []);
@@ -89,7 +90,7 @@ export default function ProdResult() {
       <div className="page-toolbar">
         <h2 className="page-title">생산실적</h2>
         <div className="toolbar-btns">
-          <button className="btn btn-danger" onClick={handleDelete}>삭제</button>
+          {isAdmin && <button className="btn btn-danger" onClick={handleDelete}>삭제</button>}
           <button className="btn btn-secondary" onClick={() => loadResults(selectedWo)}>새로고침</button>
         </div>
       </div>
@@ -102,7 +103,7 @@ export default function ProdResult() {
               <option value="">전체</option>
               {workOrders.map((w) => (
                 <option key={w.id} value={w.id}>
-                  {w.workOrderNo} ({w.item?.itemName})
+                  {w.workOrderNo} - {w.itemName}
                 </option>
               ))}
             </select>

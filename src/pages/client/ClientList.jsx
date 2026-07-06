@@ -2,10 +2,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AgGridReact } from 'ag-grid-react';
 import { ModuleRegistry, AllCommunityModule } from 'ag-grid-community';
 import { clientApi } from '../../api/clientApi';
+import { useAuth } from '../../context/AuthContext';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
 export default function ClientList() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
   const [rows, setRows] = useState([]);
   const [hasChanges, setHasChanges] = useState(false);
   const gridRef = useRef();
@@ -101,23 +104,44 @@ export default function ClientList() {
     'row-dirty': (params) => !params.data._isNew && !!params.data._isDirty,
   }), []);
 
+  // Enter 키로 셀 편집이 종료/이동되지 않도록 차단 (저장은 반드시 버튼으로만)
+  const defaultColDef = useMemo(() => ({
+    suppressKeyboardEvent: (params) => params.event.key === 'Enter',
+  }), []);
+
   const colDefs = useMemo(() => [
     { checkboxSelection: true, headerCheckboxSelection: true, width: 50, editable: false },
     {
       field: 'clientCode', headerName: '거래처코드 *', width: 130,
       editable: (params) => !!params.data._isNew,
+      cellEditorParams: { maxLength: 20 },
     },
-    { field: 'clientName', headerName: '거래처명 *', flex: 1, editable: true },
+    {
+      field: 'clientName', headerName: '거래처명 *', flex: 1, editable: true,
+      cellEditorParams: { maxLength: 100 },
+    },
     {
       field: 'clientType', headerName: '유형', width: 80, editable: true,
       cellEditor: 'agSelectCellEditor',
       cellEditorParams: { values: ['매출', '매입'] },
     },
-    { field: 'bizNo', headerName: '사업자번호', width: 130, editable: true },
-    { field: 'tel', headerName: '전화번호', width: 130, editable: true },
+    {
+      field: 'bizNo', headerName: '사업자번호', width: 130, editable: true,
+      cellEditorParams: { maxLength: 10 },
+    },
+    {
+      field: 'tel', headerName: '전화번호', width: 130, editable: true,
+      cellEditorParams: { maxLength: 20 },
+    },
     { field: 'zipCode', headerName: '우편번호', width: 90, editable: true },
-    { field: 'address', headerName: '주소', flex: 1, editable: true },
-    { field: 'addressDetail', headerName: '상세주소', flex: 1, editable: true },
+    {
+      field: 'address', headerName: '주소', flex: 1, editable: true,
+      cellEditorParams: { maxLength: 200 },
+    },
+    {
+      field: 'addressDetail', headerName: '상세주소', flex: 1, editable: true,
+      cellEditorParams: { maxLength: 100 },
+    },
     {
       field: 'useYn', headerName: '사용여부', width: 90, editable: true,
       cellEditor: 'agSelectCellEditor',
@@ -130,9 +154,9 @@ export default function ClientList() {
       <div className="page-toolbar">
         <h2 className="page-title">거래처관리</h2>
         <div className="toolbar-btns">
-          <button className="btn btn-primary" onClick={handleAddRow}>행 추가</button>
-          <button className="btn btn-success" onClick={handleSave} disabled={!hasChanges}>저장</button>
-          <button className="btn btn-danger" onClick={handleDelete}>삭제</button>
+          {isAdmin && <button className="btn btn-primary" onClick={handleAddRow}>행 추가</button>}
+          {isAdmin && <button className="btn btn-success" onClick={handleSave} disabled={!hasChanges}>저장</button>}
+          {isAdmin && <button className="btn btn-danger" onClick={handleDelete}>삭제</button>}
           <button className="btn btn-secondary" onClick={handleRefresh}>새로고침</button>
         </div>
       </div>
@@ -142,6 +166,7 @@ export default function ClientList() {
           ref={gridRef}
           rowData={rows}
           columnDefs={colDefs}
+          defaultColDef={defaultColDef}
           rowSelection="multiple"
           getRowId={getRowId}
           onCellValueChanged={onCellValueChanged}

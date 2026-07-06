@@ -12,6 +12,7 @@ const today = () => new Date().toISOString().slice(0, 10);
 
 export default function DailyClose() {
   const { user } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
   const [results, setResults] = useState([]);
   const [closes, setCloses] = useState([]);
   const [closeDate, setCloseDate] = useState(today());
@@ -77,8 +78,8 @@ export default function DailyClose() {
         <div className="toolbar-btns">
           <label style={{ marginRight: 8 }}>마감일자</label>
           <input type="date" value={closeDate} onChange={(e) => setCloseDate(e.target.value)} style={{ marginRight: 8 }} />
-          <button className="btn btn-primary" onClick={handleClose}>일마감</button>
-          <button className="btn btn-warning" onClick={handleCancelClose}>마감취소</button>
+          {isAdmin && <button className="btn btn-primary" onClick={handleClose}>일마감</button>}
+          {isAdmin && <button className="btn btn-warning" onClick={handleCancelClose}>마감취소</button>}
           <button className="btn btn-secondary" onClick={() => { loadResults(); loadCloses(); }}>새로고침</button>
         </div>
       </div>

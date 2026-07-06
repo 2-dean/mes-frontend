@@ -3,6 +3,7 @@ import { AgGridReact } from 'ag-grid-react';
 import { ModuleRegistry, AllCommunityModule } from 'ag-grid-community';
 import { workOrderApi } from '../../api/workOrderApi';
 import { itemApi } from '../../api/itemApi';
+import { useAuth } from '../../context/AuthContext';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -16,12 +17,15 @@ const defaultForm = {
 const defaultSearch = { startDate: today(), endDate: today(), status: '', confirmYn: '' };
 
 export default function WorkOrderList() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
   const [rows, setRows] = useState([]);
   const [items, setItems] = useState([]);
   const [search, setSearch] = useState(defaultSearch);
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(defaultForm);
   const [editId, setEditId] = useState(null);
+  const [selectedRows, setSelectedRows] = useState([]);
   const gridRef = useRef();
 
   const load = (params = search) => workOrderApi.getAll(params).then((r) => setRows(r.data));
@@ -66,6 +70,13 @@ export default function WorkOrderList() {
     load(search);
   };
 
+  const handleStart = async () => {
+    const sel = gridRef.current.api.getSelectedRows();
+    if (!sel.length) return alert('행을 선택하세요.');
+    await Promise.all(sel.map((r) => workOrderApi.start(r.id)));
+    load(search);
+  };
+
   const handleConfirm = async () => {
     const sel = gridRef.current.api.getSelectedRows();
     if (!sel.length) return alert('행을 선택하세요.');
@@ -89,8 +100,8 @@ export default function WorkOrderList() {
   const colDefs = [
     { checkboxSelection: true, width: 50, headerCheckboxSelection: true },
     { field: 'workOrderNo', headerName: '작업지시번호', width: 150 },
-    { field: 'item.itemName', headerName: '품목명', flex: 1 },
-    { field: 'item.itemCode', headerName: '품목코드', width: 120 },
+    { field: 'itemName', headerName: '품목명', flex: 1 },
+    { field: 'itemCode', headerName: '품목코드', width: 120 },
     { field: 'planQty', headerName: '계획수량', width: 100 },
     { field: 'planDate', headerName: '작업일자', width: 120 },
     { field: 'line', headerName: '라인', width: 100 },
@@ -106,10 +117,10 @@ export default function WorkOrderList() {
         </span>
       ),
     },
-    {
+    ...(isAdmin ? [{
       headerName: '수정', width: 80,
       cellRenderer: (p) => <button className="btn-grid" onClick={() => openEdit(p.data)}>수정</button>,
-    },
+    }] : []),
   ];
 
   const f = (key) => (e) => setForm({ ...form, [key]: e.target.value });
@@ -119,10 +130,21 @@ export default function WorkOrderList() {
       <div className="page-toolbar">
         <h2 className="page-title">작업지시</h2>
         <div className="toolbar-btns">
-          <button className="btn btn-primary" onClick={openCreate}>등록</button>
-          <button className="btn btn-success" onClick={handleConfirm}>확정</button>
-          <button className="btn btn-warning" onClick={handleCancelConfirm}>확정취소</button>
-          <button className="btn btn-danger" onClick={handleDelete}>삭제</button>
+          {isAdmin && <button className="btn btn-primary" onClick={openCreate}>등록</button>}
+          {isAdmin && (
+            <button className="btn btn-info" onClick={handleStart}
+              disabled={!selectedRows.length || selectedRows.some(r => r.status !== 'WAIT')}>
+              작업시작
+            </button>
+          )}
+          {isAdmin && (
+            <button className="btn btn-success" onClick={handleConfirm}
+              disabled={!selectedRows.length || selectedRows.some(r => r.status !== 'DONE')}>
+              확정
+            </button>
+          )}
+          {isAdmin && <button className="btn btn-warning" onClick={handleCancelConfirm}>확정취소</button>}
+          {isAdmin && <button className="btn btn-danger" onClick={handleDelete}>삭제</button>}
           <button className="btn btn-secondary" onClick={() => load(search)}>새로고침</button>
         </div>
       </div>
@@ -156,6 +178,7 @@ export default function WorkOrderList() {
           rowSelection="multiple"
           pagination
           paginationPageSize={20}
+          onSelectionChanged={(e) => setSelectedRows(e.api.getSelectedRows())}
         />
       </div>
 
