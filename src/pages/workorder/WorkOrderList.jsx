@@ -3,24 +3,34 @@ import { AgGridReact } from 'ag-grid-react';
 import { ModuleRegistry, AllCommunityModule } from 'ag-grid-community';
 import { workOrderApi } from '../../api/workOrderApi';
 import { itemApi } from '../../api/itemApi';
+import { commonCodeApi } from '../../api/commonCodeApi';
 import { useAuth } from '../../context/AuthContext';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
-const today = () => new Date().toISOString().slice(0, 10);
+const LINE_GROUP_CODE = 'CD003';
+
+const today = () => {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
 
 const defaultForm = {
   workOrderNo: '', itemId: '', planQty: 0, planDate: today(),
   status: 'WAIT', line: '', remark: '', useYn: 'Y',
 };
 
-const defaultSearch = { startDate: today(), endDate: today(), status: '', confirmYn: '' };
+const defaultSearch = { date: today(), status: '', confirmYn: '' };
 
 export default function WorkOrderList() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'ADMIN';
   const [rows, setRows] = useState([]);
   const [items, setItems] = useState([]);
+  const [lines, setLines] = useState([]);
   const [search, setSearch] = useState(defaultSearch);
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(defaultForm);
@@ -28,17 +38,24 @@ export default function WorkOrderList() {
   const [selectedRows, setSelectedRows] = useState([]);
   const gridRef = useRef();
 
-  const load = (params = search) => workOrderApi.getAll(params).then((r) => setRows(r.data));
+  const load = (params = search) => {
+    const { date, status, confirmYn } = params;
+    return workOrderApi.getAll({ startDate: date, endDate: date, status, confirmYn }).then((r) => setRows(r.data));
+  };
   useEffect(() => {
     load();
     itemApi.getAll().then((r) => setItems(r.data.filter((i) => i.useYn === 'Y')));
+    commonCodeApi.getCodesByGroupCode(LINE_GROUP_CODE).then((r) => setLines(r.data));
   }, []);
 
   const sf = (key) => (e) => setSearch((s) => ({ ...s, [key]: e.target.value }));
   const handleSearch = () => load(search);
 
+  const isEditable = (row) => row.status === 'WAIT' && row.confirmYn !== 'Y';
+
   const openCreate = () => { setForm(defaultForm); setEditId(null); setModal(true); };
   const openEdit = (row) => {
+    if (!isEditable(row)) return alert('대기(WAIT) 상태이고 미확정인 작업지시만 수정할 수 있습니다.');
     setForm({
       workOrderNo: row.workOrderNo,
       itemId: row.item?.id || '',
@@ -99,12 +116,12 @@ export default function WorkOrderList() {
 
   const colDefs = [
     { checkboxSelection: true, width: 50, headerCheckboxSelection: true },
-    { field: 'workOrderNo', headerName: '작업지시번호', width: 150 },
-    { field: 'itemName', headerName: '품목명', flex: 1 },
-    { field: 'itemCode', headerName: '품목코드', width: 120 },
-    { field: 'planQty', headerName: '계획수량', width: 100 },
     { field: 'planDate', headerName: '작업일자', width: 120 },
+    { field: 'workOrderNo', headerName: '작업지시번호', width: 150 },
     { field: 'line', headerName: '라인', width: 100 },
+    { field: 'itemCode', headerName: '품목코드', width: 120 },
+    { field: 'itemName', headerName: '품목명', flex: 1 },
+    { field: 'planQty', headerName: '계획수량', width: 100 },
     {
       field: 'status', headerName: '상태', width: 100,
       cellRenderer: (p) => statusBadge(p.value),
@@ -117,9 +134,27 @@ export default function WorkOrderList() {
         </span>
       ),
     },
+    { field: 'createdBy', headerName: '등록자', width: 100 },
+    {
+      field: 'createdAt', headerName: '등록일', width: 150,
+      valueFormatter: (p) => p.value ? p.value.replace('T', ' ').substring(0, 16) : '',
+    },
+    { field: 'updatedBy', headerName: '수정자', width: 100 },
+    {
+      field: 'updatedAt', headerName: '수정일', width: 150,
+      valueFormatter: (p) => p.value ? p.value.replace('T', ' ').substring(0, 16) : '',
+    },
     ...(isAdmin ? [{
       headerName: '수정', width: 80,
-      cellRenderer: (p) => <button className="btn-grid" onClick={() => openEdit(p.data)}>수정</button>,
+      cellRenderer: (p) => (
+        <button
+          className="btn-grid"
+          onClick={() => openEdit(p.data)}
+          disabled={!isEditable(p.data)}
+        >
+          수정
+        </button>
+      ),
     }] : []),
   ];
 
@@ -151,9 +186,7 @@ export default function WorkOrderList() {
 
       <div className="search-bar">
         <label>작업일자</label>
-        <input type="date" value={search.startDate} onChange={sf('startDate')} />
-        <span>~</span>
-        <input type="date" value={search.endDate} onChange={sf('endDate')} />
+        <input type="date" value={search.date} onChange={sf('date')} />
         <label>상태</label>
         <select value={search.status} onChange={sf('status')}>
           <option value="">전체</option>
@@ -209,7 +242,7 @@ export default function WorkOrderList() {
               </div>
               <div className="form-row">
                 <label>작업일자</label>
-                <input type="date" value={form.planDate} onChange={f('planDate')} />
+                <input type="date" value={form.planDate} disabled />
               </div>
               <div className="form-row">
                 <label>상태</label>
@@ -221,7 +254,12 @@ export default function WorkOrderList() {
               </div>
               <div className="form-row">
                 <label>생산라인</label>
-                <input value={form.line} onChange={f('line')} />
+                <select value={form.line} onChange={f('line')}>
+                  <option value="">-- 선택 --</option>
+                  {lines.map((l) => (
+                    <option key={l.code} value={l.codeName}>{l.codeName}</option>
+                  ))}
+                </select>
               </div>
               <div className="form-row">
                 <label>비고</label>

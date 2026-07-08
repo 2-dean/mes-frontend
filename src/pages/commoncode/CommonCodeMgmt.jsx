@@ -21,16 +21,20 @@ export default function CommonCodeMgmt() {
   const [hasChanges, setHasChanges] = useState(false);
   const gridRef = useRef();
 
-  const loadGroups = useCallback(async () => {
-    const r = await commonCodeApi.getGroups();
-    setGroups(r.data);
-  }, []);
-
   const loadCodes = useCallback(async (groupId) => {
     const r = await commonCodeApi.getCodes(groupId);
     setCodes(r.data);
     setHasChanges(false);
   }, []);
+
+  const loadGroups = useCallback(async () => {
+    const r = await commonCodeApi.getGroups();
+    setGroups(r.data);
+    if (r.data.length > 0) {
+      setSelectedGroup(r.data[0]);
+      loadCodes(r.data[0].id);
+    }
+  }, [loadCodes]);
 
   useEffect(() => { loadGroups(); }, [loadGroups]);
 
@@ -189,6 +193,16 @@ export default function CommonCodeMgmt() {
       cellEditor: 'agSelectCellEditor',
       cellEditorParams: { values: ['Y', 'N'] },
     },
+    { field: 'createdBy', headerName: '등록자', width: 100, editable: false },
+    {
+      field: 'createdAt', headerName: '등록일', width: 150, editable: false,
+      valueFormatter: (p) => p.value ? p.value.replace('T', ' ').substring(0, 16) : '',
+    },
+    { field: 'updatedBy', headerName: '수정자', width: 100, editable: false },
+    {
+      field: 'updatedAt', headerName: '수정일', width: 150, editable: false,
+      valueFormatter: (p) => p.value ? p.value.replace('T', ' ').substring(0, 16) : '',
+    },
   ], []);
 
   const gf = (key) => (e) => setGroupForm({ ...groupForm, [key]: e.target.value });
@@ -257,6 +271,7 @@ export default function CommonCodeMgmt() {
                   rowClassRules={rowClassRules}
                   singleClickEdit
                   stopEditingWhenCellsLoseFocus
+                  onFirstDataRendered={(params) => params.api.setFocusedCell(0, 'sortOrder')}
                 />
               </div>
             </>

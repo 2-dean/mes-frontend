@@ -2,15 +2,19 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AgGridReact } from 'ag-grid-react';
 import { ModuleRegistry, AllCommunityModule } from 'ag-grid-community';
 import { itemApi } from '../../api/itemApi';
+import { commonCodeApi } from '../../api/commonCodeApi';
 import { useAuth } from '../../context/AuthContext';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
+
+const UNIT_GROUP_CODE = 'CD001';
 
 export default function ItemList() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'ADMIN';
   const [rows, setRows] = useState([]);
   const [hasChanges, setHasChanges] = useState(false);
+  const [units, setUnits] = useState([]);
   const gridRef = useRef();
 
   const load = useCallback(async () => {
@@ -21,11 +25,17 @@ export default function ItemList() {
 
   useEffect(() => { load(); }, [load]);
 
+  useEffect(() => {
+    commonCodeApi.getCodesByGroupCode(UNIT_GROUP_CODE).then((r) => {
+      setUnits(r.data.map((c) => c.code));
+    });
+  }, []);
+
   const handleAddRow = () => {
     const newRow = {
       _rowId: `_new_${Date.now()}`,
       _isNew: true,
-      itemCode: '', itemName: '', spec: '', unit: '', unitPrice: 0, incentiveRate: 0, useYn: 'Y',
+      itemCode: '', itemName: '', spec: '', unit: units[0] || '', unitPrice: 0, incentiveRate: 0, useYn: 'Y',
     };
     setRows((prev) => [newRow, ...prev]);
     setHasChanges(true);
@@ -124,8 +134,9 @@ export default function ItemList() {
       cellEditorParams: { maxLength: 200 },
     },
     {
-      field: 'unit', headerName: '단위', width: 80, editable: true,
-      cellEditorParams: { maxLength: 10 },
+      field: 'unit', headerName: '단위', width: 100, editable: true,
+      cellEditor: 'agSelectCellEditor',
+      cellEditorParams: { values: units },
     },
     {
       field: 'unitPrice', headerName: '단가', width: 110, editable: true,
@@ -141,7 +152,17 @@ export default function ItemList() {
       cellEditor: 'agSelectCellEditor',
       cellEditorParams: { values: ['Y', 'N'] },
     },
-  ], []);
+    { field: 'createdBy', headerName: '등록자', width: 100, editable: false },
+    {
+      field: 'createdAt', headerName: '등록일', width: 150, editable: false,
+      valueFormatter: (p) => p.value ? p.value.replace('T', ' ').substring(0, 16) : '',
+    },
+    { field: 'updatedBy', headerName: '수정자', width: 100, editable: false },
+    {
+      field: 'updatedAt', headerName: '수정일', width: 150, editable: false,
+      valueFormatter: (p) => p.value ? p.value.replace('T', ' ').substring(0, 16) : '',
+    },
+  ], [units]);
 
   return (
     <div className="page-wrap">

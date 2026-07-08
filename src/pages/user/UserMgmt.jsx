@@ -124,13 +124,21 @@ export default function UserMgmt() {
     },
     { field: 'createdBy', headerName: '등록자', width: 100 },
     {
-      field: 'createdAt', headerName: '등록일', flex: 1,
+      field: 'createdAt', headerName: '등록일', width: 150,
+      valueFormatter: (p) => p.value ? p.value.replace('T', ' ').substring(0, 16) : '',
+    },
+    { field: 'updatedBy', headerName: '수정자', width: 100 },
+    {
+      field: 'updatedAt', headerName: '수정일', flex: 1,
       valueFormatter: (p) => p.value ? p.value.replace('T', ' ').substring(0, 16) : '',
     },
   ], []);
 
   const rf = (key) => (e) => setRegForm((f) => ({ ...f, [key]: e.target.value }));
   const ef = (key) => (e) => setEditForm((f) => ({ ...f, [key]: e.target.value }));
+
+  // ADMIN 계정은 강등/비활성화 불가 (화면단 차단)
+  const isProtectedAdmin = selected?.role === 'ADMIN';
 
   return (
     <div className="page-wrap">
@@ -208,18 +216,23 @@ export default function UserMgmt() {
               </div>
               <div className="form-row">
                 <label>권한</label>
-                <select value={editForm.role} onChange={ef('role')}>
+                <select value={editForm.role} onChange={ef('role')} disabled={isProtectedAdmin}>
                   <option value="USER">USER</option>
                   <option value="ADMIN">ADMIN</option>
                 </select>
               </div>
               <div className="form-row">
                 <label>사용여부</label>
-                <select value={editForm.useYn} onChange={ef('useYn')}>
+                <select value={editForm.useYn} onChange={ef('useYn')} disabled={isProtectedAdmin}>
                   <option value="Y">사용</option>
                   <option value="N">미사용</option>
                 </select>
               </div>
+              {isProtectedAdmin && (
+                <p style={{ color: '#dc2626', fontSize: '0.85rem', marginTop: '4px' }}>
+                  관리자(ADMIN) 계정은 권한/사용여부를 변경할 수 없습니다.
+                </p>
+              )}
             </div>
             <div className="modal-footer">
               <button className="btn btn-primary" onClick={handleEdit}>저장</button>

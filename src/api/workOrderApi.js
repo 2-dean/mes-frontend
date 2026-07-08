@@ -7,6 +7,7 @@ export const workOrderApi = {
   getById: (id) => api.get(`${BASE}/${id}`),
   create: (data) => api.post(BASE, data),
   update: (id, data) => api.put(`${BASE}/${id}`, data),
+  start: (id) => api.patch(`${BASE}/${id}/start`),
   confirm: (id) => api.patch(`${BASE}/${id}/confirm`),
   cancelConfirm: (id) => api.patch(`${BASE}/${id}/cancel-confirm`),
   delete: (id) => api.delete(`${BASE}/${id}`),

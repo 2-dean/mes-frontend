@@ -8,7 +8,12 @@ import { useMultiGridDirty } from '../../hooks/useMultiGridDirty';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
-const thisMonth = () => new Date().toISOString().slice(0, 7);
+const thisMonth = () => {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  return `${y}-${m}`;
+};
 
 export default function Incentive() {
   const { user } = useAuth();

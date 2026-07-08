@@ -14,13 +14,25 @@ ChartJS.register(
   Title, Tooltip, Legend, LineElement, PointElement,
 );
 
+const toLocalDateStr = (d) => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+const today = () => toLocalDateStr(new Date());
+
 export default function Dashboard() {
+  const [date, setDate] = useState(today());
   const [workOrders, setWorkOrders] = useState([]);
   const [incentives, setIncentives] = useState([]);
   const [results, setResults] = useState([]);
 
   useEffect(() => {
-    workOrderApi.getAll().then((r) => setWorkOrders(r.data));
+    workOrderApi.getAll({ startDate: date, endDate: date }).then((r) => setWorkOrders(r.data));
+  }, [date]);
+
+  useEffect(() => {
     prodIncentiveApi.getAll().then((r) => setIncentives(r.data));
     prodResultApi.getAll().then((r) => setResults(r.data));
   }, []);
@@ -43,7 +55,7 @@ export default function Dashboard() {
   const last7 = Array.from({ length: 7 }, (_, i) => {
     const d = new Date();
     d.setDate(d.getDate() - (6 - i));
-    return d.toISOString().slice(0, 10);
+    return toLocalDateStr(d);
   });
 
   const dailyQty = last7.map((date) =>
@@ -81,7 +93,7 @@ export default function Dashboard() {
   };
 
   const summaryCards = [
-    { label: '전체 작업지시', value: workOrders.length, color: '#0d6efd' },
+    { label: '당일 작업지시', value: workOrders.length, color: '#0d6efd' },
     { label: '진행중', value: statusCount.IN_PROGRESS || 0, color: '#ffc107' },
     { label: '완료', value: statusCount.DONE || 0, color: '#198754' },
     { label: '오늘 생산수량', value: dailyQty[6] || 0, color: '#dc3545' },
@@ -89,7 +101,13 @@ export default function Dashboard() {
 
   return (
     <div className="page-wrap">
-      <h2 className="page-title" style={{ marginBottom: 20 }}>대시보드</h2>
+      <div className="page-toolbar" style={{ marginBottom: 20 }}>
+        <h2 className="page-title">대시보드</h2>
+        <div className="form-group-inline">
+          <label>작업지시 조회일자</label>
+          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+        </div>
+      </div>
 
       <div className="summary-cards">
         {summaryCards.map((c) => (

@@ -147,6 +147,16 @@ export default function ClientList() {
       cellEditor: 'agSelectCellEditor',
       cellEditorParams: { values: ['Y', 'N'] },
     },
+    { field: 'createdBy', headerName: '등록자', width: 100, editable: false },
+    {
+      field: 'createdAt', headerName: '등록일', width: 150, editable: false,
+      valueFormatter: (p) => p.value ? p.value.replace('T', ' ').substring(0, 16) : '',
+    },
+    { field: 'updatedBy', headerName: '수정자', width: 100, editable: false },
+    {
+      field: 'updatedAt', headerName: '수정일', width: 150, editable: false,
+      valueFormatter: (p) => p.value ? p.value.replace('T', ' ').substring(0, 16) : '',
+    },
   ], []);
 
   return (
