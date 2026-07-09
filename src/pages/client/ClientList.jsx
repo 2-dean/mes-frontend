@@ -62,6 +62,7 @@ export default function ClientList() {
         ...dirtyRows.map(({ _isDirty, ...data }) => clientApi.update(data.id, data)),
       ]);
       await load();
+      alert('저장되었습니다.');
     } catch {
       alert('저장 중 오류가 발생했습니다.');
     }
@@ -83,6 +84,7 @@ export default function ClientList() {
         const ids = new Set(unsaved.map((r) => r._rowId));
         setRows((prev) => prev.filter((r) => !r._isNew || !ids.has(r._rowId)));
       }
+      alert('삭제되었습니다.');
     } catch {
       alert('삭제 중 오류가 발생했습니다.');
     }

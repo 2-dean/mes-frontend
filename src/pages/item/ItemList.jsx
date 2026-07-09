@@ -71,6 +71,7 @@ export default function ItemList() {
         ...dirtyRows.map(({ _isDirty, ...data }) => itemApi.update(data.id, data)),
       ]);
       await load();
+      alert('저장되었습니다.');
     } catch {
       alert('저장 중 오류가 발생했습니다.');
     }
@@ -92,6 +93,7 @@ export default function ItemList() {
         const ids = new Set(unsaved.map((r) => r._rowId));
         setRows((prev) => prev.filter((r) => !r._isNew || !ids.has(r._rowId)));
       }
+      alert('삭제되었습니다.');
     } catch {
       alert('삭제 중 오류가 발생했습니다.');
     }
@@ -191,11 +193,20 @@ export default function ItemList() {
           placeholder="품목명 검색"
         />
         <label>사용여부</label>
-        <select value={search.useYn} onChange={sf('useYn')}>
-          <option value="">전체</option>
-          <option value="Y">사용</option>
-          <option value="N">미사용</option>
-        </select>
+        <span className="radio-group">
+          {[['', '전체'], ['Y', '사용'], ['N', '미사용']].map(([value, label]) => (
+            <label key={value || 'all'} className="radio-item">
+              <input
+                type="radio"
+                name="useYn"
+                value={value}
+                checked={search.useYn === value}
+                onChange={sf('useYn')}
+              />
+              {label}
+            </label>
+          ))}
+        </span>
         <button className="btn btn-primary" onClick={handleSearch}>조회</button>
       </div>
 
