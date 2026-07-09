@@ -116,36 +116,36 @@ export default function WorkOrderList() {
 
   const colDefs = [
     { checkboxSelection: true, width: 50, headerCheckboxSelection: true },
-    { field: 'planDate', headerName: '작업일자', width: 120 },
-    { field: 'workOrderNo', headerName: '작업지시번호', width: 150 },
+    { field: 'planDate', headerName: '작업일자', width: 130 },
+    { field: 'workOrderNo', headerName: '작업지시번호', width: 170 },
     { field: 'line', headerName: '라인', width: 100 },
-    { field: 'itemCode', headerName: '품목코드', width: 120 },
-    { field: 'itemName', headerName: '품목명', flex: 1 },
-    { field: 'planQty', headerName: '계획수량', width: 100 },
+    { field: 'itemCode', headerName: '품목코드', width: 130 },
+    { field: 'itemName', headerName: '품목명', flex: 1, minWidth: 140 },
+    { field: 'planQty', headerName: '계획수량', width: 110 },
     {
-      field: 'status', headerName: '상태', width: 100,
+      field: 'status', headerName: '상태', width: 110,
       cellRenderer: (p) => statusBadge(p.value),
     },
     {
-      field: 'confirmYn', headerName: '확정', width: 80,
+      field: 'confirmYn', headerName: '확정', width: 90,
       cellRenderer: (p) => (
         <span className={`badge ${p.value === 'Y' ? 'badge-done' : 'badge-wait'}`}>
           {p.value === 'Y' ? '확정' : '미확정'}
         </span>
       ),
     },
-    { field: 'createdBy', headerName: '등록자', width: 100 },
+    { field: 'createdBy', headerName: '등록자', width: 110 },
     {
-      field: 'createdAt', headerName: '등록일', width: 150,
+      field: 'createdAt', headerName: '등록일', width: 170,
       valueFormatter: (p) => p.value ? p.value.replace('T', ' ').substring(0, 16) : '',
     },
-    { field: 'updatedBy', headerName: '수정자', width: 100 },
+    { field: 'updatedBy', headerName: '수정자', width: 110 },
     {
-      field: 'updatedAt', headerName: '수정일', width: 150,
+      field: 'updatedAt', headerName: '수정일', width: 170,
       valueFormatter: (p) => p.value ? p.value.replace('T', ' ').substring(0, 16) : '',
     },
     ...(isAdmin ? [{
-      headerName: '수정', width: 80,
+      headerName: '수정', width: 90,
       cellRenderer: (p) => (
         <button
           className="btn-grid"

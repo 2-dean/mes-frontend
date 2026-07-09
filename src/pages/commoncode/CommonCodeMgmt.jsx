@@ -157,24 +157,24 @@ export default function CommonCodeMgmt() {
       valueParser: (p) => Number(p.newValue) || 0,
     },
     {
-      field: 'code', headerName: '코드 *', width: 120,
+      field: 'code', headerName: '코드 *', width: 130,
       editable: (params) => !!params.data._isNew,
     },
-    { field: 'codeName', headerName: '코드명 *', width: 150, editable: true },
-    { field: 'description', headerName: '설명', flex: 1, editable: true },
+    { field: 'codeName', headerName: '코드명 *', width: 160, editable: true },
+    { field: 'description', headerName: '설명', flex: 1, minWidth: 160, editable: true },
     {
-      field: 'useYn', headerName: '사용여부', width: 90, editable: true,
+      field: 'useYn', headerName: '사용여부', width: 100, editable: true,
       cellEditor: 'agSelectCellEditor',
       cellEditorParams: { values: ['Y', 'N'] },
     },
-    { field: 'createdBy', headerName: '등록자', width: 100, editable: false },
+    { field: 'createdBy', headerName: '등록자', width: 110, editable: false },
     {
-      field: 'createdAt', headerName: '등록일', width: 150, editable: false,
+      field: 'createdAt', headerName: '등록일', width: 170, editable: false,
       valueFormatter: (p) => p.value ? p.value.replace('T', ' ').substring(0, 16) : '',
     },
-    { field: 'updatedBy', headerName: '수정자', width: 100, editable: false },
+    { field: 'updatedBy', headerName: '수정자', width: 110, editable: false },
     {
-      field: 'updatedAt', headerName: '수정일', width: 150, editable: false,
+      field: 'updatedAt', headerName: '수정일', width: 170, editable: false,
       valueFormatter: (p) => p.value ? p.value.replace('T', ' ').substring(0, 16) : '',
     },
   ], []);

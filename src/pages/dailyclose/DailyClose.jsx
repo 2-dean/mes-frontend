@@ -54,14 +54,14 @@ export default function DailyClose() {
   const isClosedDate = (date) => closes.some((c) => c.closeDate === date && c.closeYn === 'Y');
 
   const resultColDefs = [
-    { field: 'workOrder.workOrderNo', headerName: '작업지시번호', width: 150 },
-    { field: 'worker', headerName: '작업자', width: 100 },
-    { field: 'prodDate', headerName: '생산일자', width: 120 },
-    { field: 'scanQty', headerName: '스캔수량', width: 100 },
-    { field: 'manualQty', headerName: '수동수량', width: 100 },
-    { field: 'totalQty', headerName: '합계수량', width: 100 },
+    { field: 'workOrder.workOrderNo', headerName: '작업지시번호', width: 170 },
+    { field: 'worker', headerName: '작업자', width: 110 },
+    { field: 'prodDate', headerName: '생산일자', width: 130 },
+    { field: 'scanQty', headerName: '스캔수량', width: 110 },
+    { field: 'manualQty', headerName: '수동수량', width: 110 },
+    { field: 'totalQty', headerName: '합계수량', width: 110 },
     {
-      headerName: '마감여부', width: 100,
+      headerName: '마감여부', width: 110,
       cellRenderer: (p) => {
         const date = p.data?.prodDate;
         const closed = isClosedDate(date);
@@ -71,10 +71,10 @@ export default function DailyClose() {
   ];
 
   const closeColDefs = [
-    { field: 'closeDate', headerName: '마감일자', width: 130 },
-    { field: 'closeYn', headerName: '마감여부', width: 90 },
-    { field: 'closedBy', headerName: '마감자', width: 100 },
-    { field: 'closedAt', headerName: '마감일시', flex: 1 },
+    { field: 'closeDate', headerName: '마감일자', width: 140 },
+    { field: 'closeYn', headerName: '마감여부', width: 100 },
+    { field: 'closedBy', headerName: '마감자', width: 110 },
+    { field: 'closedAt', headerName: '마감일시', flex: 1, minWidth: 170 },
   ];
 
   return (

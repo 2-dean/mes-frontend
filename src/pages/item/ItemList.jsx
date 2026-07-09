@@ -136,16 +136,16 @@ export default function ItemList() {
   const colDefs = useMemo(() => [
     { checkboxSelection: true, headerCheckboxSelection: true, width: 50, editable: false },
     {
-      field: 'itemCode', headerName: '품목코드 *', width: 130,
+      field: 'itemCode', headerName: '품목코드 *', width: 140,
       editable: (params) => !!params.data._isNew,
       cellEditorParams: { maxLength: 20 },
     },
     {
-      field: 'itemName', headerName: '품목명 *', flex: 1, editable: true,
+      field: 'itemName', headerName: '품목명 *', flex: 1, minWidth: 140, editable: true,
       cellEditorParams: { maxLength: 100 },
     },
     {
-      field: 'spec', headerName: '규격', width: 120, editable: true,
+      field: 'spec', headerName: '규격', width: 160, editable: true,
       cellEditorParams: { maxLength: 200 },
     },
     {
@@ -154,27 +154,27 @@ export default function ItemList() {
       cellEditorParams: { values: units },
     },
     {
-      field: 'unitPrice', headerName: '단가', width: 110, editable: true,
+      field: 'unitPrice', headerName: '단가', width: 120, editable: true,
       valueFormatter: (p) => p.value?.toLocaleString(),
       valueParser: (p) => Number(p.newValue) || 0,
     },
     {
-      field: 'incentiveRate', headerName: '인센티브율(%)', width: 130, editable: true,
+      field: 'incentiveRate', headerName: '인센티브율(%)', width: 150, editable: true,
       valueParser: (p) => Number(p.newValue) || 0,
     },
     {
-      field: 'useYn', headerName: '사용여부', width: 90, editable: true,
+      field: 'useYn', headerName: '사용여부', width: 100, editable: true,
       cellEditor: 'agSelectCellEditor',
       cellEditorParams: { values: ['Y', 'N'] },
     },
-    { field: 'createdBy', headerName: '등록자', width: 100, editable: false },
+    { field: 'createdBy', headerName: '등록자', width: 110, editable: false },
     {
-      field: 'createdAt', headerName: '등록일', width: 150, editable: false,
+      field: 'createdAt', headerName: '등록일', width: 170, editable: false,
       valueFormatter: (p) => p.value ? p.value.replace('T', ' ').substring(0, 16) : '',
     },
-    { field: 'updatedBy', headerName: '수정자', width: 100, editable: false },
+    { field: 'updatedBy', headerName: '수정자', width: 110, editable: false },
     {
-      field: 'updatedAt', headerName: '수정일', width: 150, editable: false,
+      field: 'updatedAt', headerName: '수정일', width: 170, editable: false,
       valueFormatter: (p) => p.value ? p.value.replace('T', ' ').substring(0, 16) : '',
     },
   ], [units]);

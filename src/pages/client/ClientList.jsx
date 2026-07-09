@@ -147,53 +147,53 @@ export default function ClientList() {
   const colDefs = useMemo(() => [
     { checkboxSelection: true, headerCheckboxSelection: true, width: 50, editable: false },
     {
-      field: 'clientCode', headerName: '거래처코드 *', width: 130,
+      field: 'clientCode', headerName: '거래처코드 *', width: 140,
       editable: (params) => !!params.data._isNew,
       cellEditorParams: { maxLength: 20 },
     },
     {
-      field: 'clientName', headerName: '거래처명 *', flex: 1, editable: true,
+      field: 'clientName', headerName: '거래처명 *', flex: 1, minWidth: 140, editable: true,
       cellEditorParams: { maxLength: 100 },
     },
     {
-      field: 'clientType', headerName: '유형', width: 80, editable: true,
+      field: 'clientType', headerName: '유형', width: 90, editable: true,
       cellEditor: 'agSelectCellEditor',
       cellEditorParams: { values: ['매출', '매입'] },
     },
     {
-      field: 'bizNo', headerName: '사업자번호', width: 130, editable: true,
+      field: 'bizNo', headerName: '사업자번호', width: 150, editable: true,
       cellEditorParams: { maxLength: 12 },
       valueParser: (p) => onlyDigits(p.newValue).slice(0, 10),
       valueFormatter: (p) => formatBizNo(onlyDigits(p.value)),
     },
     {
-      field: 'tel', headerName: '전화번호', width: 130, editable: true,
+      field: 'tel', headerName: '전화번호', width: 150, editable: true,
       cellEditorParams: { maxLength: 13 },
       valueParser: (p) => onlyDigits(p.newValue).slice(0, 11),
       valueFormatter: (p) => formatTel(onlyDigits(p.value)),
     },
-    { field: 'zipCode', headerName: '우편번호', width: 90, editable: true },
+    { field: 'zipCode', headerName: '우편번호', width: 100, editable: true },
     {
-      field: 'address', headerName: '주소', flex: 1, editable: true,
+      field: 'address', headerName: '주소', flex: 1.5, minWidth: 200, editable: true,
       cellEditorParams: { maxLength: 200 },
     },
     {
-      field: 'addressDetail', headerName: '상세주소', flex: 1, editable: true,
+      field: 'addressDetail', headerName: '상세주소', flex: 1, minWidth: 140, editable: true,
       cellEditorParams: { maxLength: 100 },
     },
     {
-      field: 'useYn', headerName: '사용여부', width: 90, editable: true,
+      field: 'useYn', headerName: '사용여부', width: 100, editable: true,
       cellEditor: 'agSelectCellEditor',
       cellEditorParams: { values: ['Y', 'N'] },
     },
-    { field: 'createdBy', headerName: '등록자', width: 100, editable: false },
+    { field: 'createdBy', headerName: '등록자', width: 110, editable: false },
     {
-      field: 'createdAt', headerName: '등록일', width: 150, editable: false,
+      field: 'createdAt', headerName: '등록일', width: 170, editable: false,
       valueFormatter: (p) => p.value ? p.value.replace('T', ' ').substring(0, 16) : '',
     },
-    { field: 'updatedBy', headerName: '수정자', width: 100, editable: false },
+    { field: 'updatedBy', headerName: '수정자', width: 110, editable: false },
     {
-      field: 'updatedAt', headerName: '수정일', width: 150, editable: false,
+      field: 'updatedAt', headerName: '수정일', width: 170, editable: false,
       valueFormatter: (p) => p.value ? p.value.replace('T', ' ').substring(0, 16) : '',
     },
   ], []);

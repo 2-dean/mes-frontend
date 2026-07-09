@@ -59,15 +59,15 @@ export default function Incentive() {
   const totalAmount = filtered.reduce((s, i) => s + (i.amount || 0), 0);
 
   const incColDefs = [
-    { field: 'workOrder.workOrderNo', headerName: '작업지시번호', width: 150 },
-    { field: 'worker', headerName: '작업자', width: 100 },
-    { field: 'closeDate', headerName: '마감일자', width: 120 },
-    { field: 'qty', headerName: '수량', width: 90 },
-    { field: 'unitPrice', headerName: '단가', width: 100, valueFormatter: (p) => p.value?.toLocaleString() },
-    { field: 'incentiveRate', headerName: '인센티브율(%)', width: 130 },
-    { field: 'amount', headerName: '인센티브금액', width: 130, valueFormatter: (p) => p.value?.toLocaleString() },
+    { field: 'workOrder.workOrderNo', headerName: '작업지시번호', width: 170 },
+    { field: 'worker', headerName: '작업자', width: 110 },
+    { field: 'closeDate', headerName: '마감일자', width: 130 },
+    { field: 'qty', headerName: '수량', width: 100 },
+    { field: 'unitPrice', headerName: '단가', width: 120, valueFormatter: (p) => p.value?.toLocaleString() },
+    { field: 'incentiveRate', headerName: '인센티브율(%)', width: 150 },
+    { field: 'amount', headerName: '인센티브금액', width: 160, valueFormatter: (p) => p.value?.toLocaleString() },
     {
-      field: 'confirmYn', headerName: '확정', width: 80,
+      field: 'confirmYn', headerName: '확정', width: 90,
       cellRenderer: (p) => (
         <span className={`badge ${p.value === 'Y' ? 'badge-done' : 'badge-wait'}`}>
           {p.value === 'Y' ? '확정' : '미확정'}
@@ -77,10 +77,10 @@ export default function Incentive() {
   ];
 
   const closeColDefs = [
-    { field: 'yearMonth', headerName: '마감년월', width: 120 },
-    { field: 'closeYn', headerName: '마감여부', width: 90 },
-    { field: 'closedBy', headerName: '마감자', width: 100 },
-    { field: 'closedAt', headerName: '마감일시', flex: 1 },
+    { field: 'yearMonth', headerName: '마감년월', width: 130 },
+    { field: 'closeYn', headerName: '마감여부', width: 100 },
+    { field: 'closedBy', headerName: '마감자', width: 110 },
+    { field: 'closedAt', headerName: '마감일시', flex: 1, minWidth: 170 },
   ];
 
   return (

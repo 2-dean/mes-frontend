@@ -6,6 +6,7 @@ import { workOrderApi } from '../../api/workOrderApi';
 import { itemApi } from '../../api/itemApi';
 import { userApi } from '../../api/userApi';
 import { commonCodeApi } from '../../api/commonCodeApi';
+import { errorMessage } from '../../api/errorMessage';
 import { useAuth } from '../../context/AuthContext';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
@@ -34,7 +35,6 @@ export default function ProdResult() {
   const [selectedLine, setSelectedLine] = useState('');
   const [date, setDate] = useState(today());
   const [loading, setLoading] = useState(false);
-  const [dirtyIds, setDirtyIds] = useState(new Set());
 
   const [scanModal, setScanModal] = useState(false);
   const [scanWorkOrderId, setScanWorkOrderId] = useState('');
@@ -63,10 +63,7 @@ export default function ProdResult() {
   const loadResults = (itemId = selectedItem, line = selectedLine, d = date) => {
     prodResultApi
       .search({ itemId: itemId || undefined, line: line || undefined, prodDate: d || undefined })
-      .then((r) => {
-        setRows(r.data);
-        setDirtyIds(new Set());
-      });
+      .then((r) => setRows(r.data));
   };
 
   const handleItemChange = (e) => setSelectedItem(e.target.value);
@@ -121,6 +118,7 @@ export default function ProdResult() {
     const tempId = `new-${++newRowSeq.current}`;
     const newRow = {
       _tempId: tempId,
+      _isDirty: true,
       workOrder: null,
       worker: '',
       scanQty: 0,
@@ -129,22 +127,24 @@ export default function ProdResult() {
       prodDate: date,
     };
     setRows((rs) => [newRow, ...rs]);
-    setDirtyIds((s) => new Set(s).add(tempId));
   };
 
   const handleCellValueChanged = (e) => {
-    setDirtyIds((s) => new Set(s).add(rowKey(e.data)));
+    e.data._isDirty = true;
   };
 
   const handleSaveGrid = async () => {
-    if (!dirtyIds.size) return alert('변경된 행이 없습니다.');
     const gridApi = gridRef.current.api;
+    gridApi.stopEditing();
+
     const tasks = [];
     let invalid = null;
+    let anyDirty = false;
 
     gridApi.forEachNode((node) => {
       const data = node.data;
-      if (!dirtyIds.has(rowKey(data))) return;
+      if (!data._isDirty) return;
+      anyDirty = true;
       if (data.id) {
         tasks.push(prodResultApi.updateManualQty(data.id, Number(data.manualQty) || 0));
       } else if (!data.workOrder?.id) {
@@ -158,14 +158,16 @@ export default function ProdResult() {
       }
     });
 
+    if (!anyDirty) return alert('변경된 행이 없습니다.');
     if (invalid) return alert(invalid);
 
     try {
       await Promise.all(tasks);
       loadResults();
       refreshWorkOrders();
+      alert('저장되었습니다.');
     } catch (err) {
-      alert(err.response?.data?.message || '저장에 실패했습니다.');
+      alert(errorMessage(err, '저장에 실패했습니다.'));
     }
   };
 
@@ -185,7 +187,7 @@ export default function ProdResult() {
         if (res.status === 'fulfilled') {
           succeeded.push(persisted[i]);
         } else {
-          const msg = res.reason?.response?.data?.message || '삭제에 실패했습니다.';
+          const msg = errorMessage(res.reason, '삭제에 실패했습니다.');
           failMessages.push(`${persisted[i].workOrder?.workOrderNo || persisted[i].id}: ${msg}`);
         }
       });
@@ -194,14 +196,10 @@ export default function ProdResult() {
     if (succeeded.length) {
       const idsToRemove = new Set(succeeded.map(rowKey));
       setRows((rs) => rs.filter((r) => !idsToRemove.has(rowKey(r))));
-      setDirtyIds((s) => {
-        const next = new Set(s);
-        idsToRemove.forEach((id) => next.delete(id));
-        return next;
-      });
     }
 
     if (failMessages.length) alert(failMessages.join('\n'));
+    else if (succeeded.length) alert('삭제되었습니다.');
   };
 
   const colDefs = [
@@ -209,7 +207,7 @@ export default function ProdResult() {
     {
       field: 'workOrder.workOrderNo',
       headerName: '작업지시',
-      width: 160,
+      width: 230,
       editable: (p) => !p.data.id,
       cellEditor: 'agSelectCellEditor',
       cellEditorParams: { values: workOrders.map((w) => String(w.id)) },
@@ -229,21 +227,21 @@ export default function ProdResult() {
       },
     },
     { field: 'workOrder.item.itemName', headerName: '품목명', width: 150 },
-    { field: 'workOrder.planQty', headerName: '계획수량', width: 100 },
+    { field: 'workOrder.planQty', headerName: '계획수량', width: 110 },
     { field: 'workOrder.line', headerName: '라인', width: 100 },
     {
-      field: 'worker', headerName: '작업자', width: 110,
+      field: 'worker', headerName: '작업자', width: 120,
       editable: (p) => !p.data.id,
       cellEditor: 'agSelectCellEditor',
       cellEditorParams: { values: workers.map((w) => w.username) },
     },
-    { field: 'prodDate', headerName: '생산일자', width: 120 },
-    { field: 'scanQty', headerName: '스캔수량', width: 100 },
+    { field: 'prodDate', headerName: '생산일자', width: 130 },
+    { field: 'scanQty', headerName: '스캔수량', width: 110 },
     {
-      field: 'manualQty', headerName: '수동수량', width: 100,
+      field: 'manualQty', headerName: '수동수량', width: 110,
       editable: true, cellEditor: 'agNumberCellEditor', cellEditorParams: { min: 0 },
     },
-    { field: 'totalQty', headerName: '합계수량', width: 100, editable: false },
+    { field: 'totalQty', headerName: '합계수량', width: 110, editable: false },
   ];
 
   return (

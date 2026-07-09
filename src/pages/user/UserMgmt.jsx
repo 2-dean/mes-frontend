@@ -100,10 +100,10 @@ export default function UserMgmt() {
   // ── Grid ──────────────────────────────────────────
   const colDefs = useMemo(() => [
     { checkboxSelection: true, width: 50, editable: false },
-    { field: 'username', headerName: '아이디', width: 130 },
+    { field: 'username', headerName: '아이디', width: 140 },
     { field: 'name', headerName: '이름', width: 120 },
     {
-      field: 'role', headerName: '권한', width: 100,
+      field: 'role', headerName: '권한', width: 110,
       cellRenderer: (p) => (
         <span style={{
           padding: '2px 8px', borderRadius: '10px', fontSize: '11px', fontWeight: 600,
@@ -115,19 +115,19 @@ export default function UserMgmt() {
       ),
     },
     {
-      field: 'useYn', headerName: '사용여부', width: 90,
+      field: 'useYn', headerName: '사용여부', width: 100,
       cellRenderer: (p) => (
         <span style={{ color: p.value === 'Y' ? '#15803d' : '#dc2626', fontWeight: 600 }}>
           {p.value === 'Y' ? '사용' : '미사용'}
         </span>
       ),
     },
-    { field: 'createdBy', headerName: '등록자', width: 100 },
+    { field: 'createdBy', headerName: '등록자', width: 110 },
     {
-      field: 'createdAt', headerName: '등록일', width: 150,
+      field: 'createdAt', headerName: '등록일', width: 170,
       valueFormatter: (p) => p.value ? p.value.replace('T', ' ').substring(0, 16) : '',
     },
-    { field: 'updatedBy', headerName: '수정자', width: 100 },
+    { field: 'updatedBy', headerName: '수정자', width: 110 },
     {
       field: 'updatedAt', headerName: '수정일', flex: 1,
       valueFormatter: (p) => p.value ? p.value.replace('T', ' ').substring(0, 16) : '',
