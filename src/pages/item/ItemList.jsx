@@ -9,21 +9,27 @@ ModuleRegistry.registerModules([AllCommunityModule]);
 
 const UNIT_GROUP_CODE = 'CD001';
 
+const defaultSearch = { itemName: '', useYn: 'Y' };
+
 export default function ItemList() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'ADMIN';
   const [rows, setRows] = useState([]);
   const [hasChanges, setHasChanges] = useState(false);
   const [units, setUnits] = useState([]);
+  const [search, setSearch] = useState(defaultSearch);
   const gridRef = useRef();
 
-  const load = useCallback(async () => {
-    const r = await itemApi.getAll();
+  const load = (params = search) => itemApi.getAll(params).then((r) => {
     setRows(r.data);
     setHasChanges(false);
-  }, []);
+  });
 
-  useEffect(() => { load(); }, [load]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { load(); }, []);
+
+  const sf = (key) => (e) => setSearch((s) => ({ ...s, [key]: e.target.value }));
+  const handleSearch = () => load(search);
 
   useEffect(() => {
     commonCodeApi.getCodesByGroupCode(UNIT_GROUP_CODE).then((r) => {
@@ -174,6 +180,23 @@ export default function ItemList() {
           {isAdmin && <button className="btn btn-danger" onClick={handleDelete}>삭제</button>}
           <button className="btn btn-secondary" onClick={handleRefresh}>새로고침</button>
         </div>
+      </div>
+
+      <div className="search-bar">
+        <label>품목명</label>
+        <input
+          value={search.itemName}
+          onChange={sf('itemName')}
+          onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+          placeholder="품목명 검색"
+        />
+        <label>사용여부</label>
+        <select value={search.useYn} onChange={sf('useYn')}>
+          <option value="">전체</option>
+          <option value="Y">사용</option>
+          <option value="N">미사용</option>
+        </select>
+        <button className="btn btn-primary" onClick={handleSearch}>조회</button>
       </div>
 
       <div className="ag-theme-alpine grid-wrap">
