@@ -3,6 +3,7 @@ import { AgGridReact } from 'ag-grid-react';
 import { ModuleRegistry, AllCommunityModule } from 'ag-grid-community';
 import { itemApi } from '../../api/itemApi';
 import { commonCodeApi } from '../../api/commonCodeApi';
+import { errorMessage } from '../../api/errorMessage';
 import { useAuth } from '../../context/AuthContext';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
@@ -72,8 +73,8 @@ export default function ItemList() {
       ]);
       await load();
       alert('저장되었습니다.');
-    } catch {
-      alert('저장 중 오류가 발생했습니다.');
+    } catch (e) {
+      alert(errorMessage(e, '저장 중 오류가 발생했습니다.'));
     }
   };
 
@@ -94,8 +95,8 @@ export default function ItemList() {
         setRows((prev) => prev.filter((r) => !r._isNew || !ids.has(r._rowId)));
       }
       alert('삭제되었습니다.');
-    } catch {
-      alert('삭제 중 오류가 발생했습니다.');
+    } catch (e) {
+      alert(errorMessage(e, '삭제 중 오류가 발생했습니다.'));
     }
   };
 

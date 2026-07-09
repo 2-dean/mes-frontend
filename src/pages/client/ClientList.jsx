@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AgGridReact } from 'ag-grid-react';
 import { ModuleRegistry, AllCommunityModule } from 'ag-grid-community';
 import { clientApi } from '../../api/clientApi';
+import { errorMessage } from '../../api/errorMessage';
 import { useAuth } from '../../context/AuthContext';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
@@ -63,8 +64,8 @@ export default function ClientList() {
       ]);
       await load();
       alert('저장되었습니다.');
-    } catch {
-      alert('저장 중 오류가 발생했습니다.');
+    } catch (e) {
+      alert(errorMessage(e, '저장 중 오류가 발생했습니다.'));
     }
   };
 
@@ -85,8 +86,8 @@ export default function ClientList() {
         setRows((prev) => prev.filter((r) => !r._isNew || !ids.has(r._rowId)));
       }
       alert('삭제되었습니다.');
-    } catch {
-      alert('삭제 중 오류가 발생했습니다.');
+    } catch (e) {
+      alert(errorMessage(e, '삭제 중 오류가 발생했습니다.'));
     }
   };
 
@@ -135,7 +136,12 @@ export default function ClientList() {
     },
     {
       field: 'bizNo', headerName: '사업자번호', width: 130, editable: true,
-      cellEditorParams: { maxLength: 10 },
+      cellEditorParams: { maxLength: 12 },
+      valueParser: (p) => p.newValue.replace(/[^0-9]/g, '').slice(0, 10),
+      valueFormatter: (p) => {
+        const digits = (p.value || '').replace(/[^0-9]/g, '');
+        return digits.length === 10 ? `${digits.slice(0, 3)}-${digits.slice(3, 5)}-${digits.slice(5)}` : (p.value || '');
+      },
     },
     {
       field: 'tel', headerName: '전화번호', width: 130, editable: true,
