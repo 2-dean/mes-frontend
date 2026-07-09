@@ -146,8 +146,8 @@ export default function UserMgmt() {
         <h2 className="page-title">사용자관리</h2>
         <div className="toolbar-btns">
           <button className="btn btn-primary" onClick={openReg}>등록</button>
-          <button className="btn btn-secondary" onClick={openEdit} disabled={!selected}>수정</button>
-          <button className="btn btn-warning" onClick={openPw} disabled={!selected}>비밀번호 변경</button>
+          <button className="btn btn-secondary" onClick={openEdit} disabled title="사용불가한 기능입니다">수정</button>
+          <button className="btn btn-warning" onClick={openPw} disabled title="사용불가한 기능입니다">비밀번호 변경</button>
           <button className="btn btn-secondary" onClick={load}>새로고침</button>
         </div>
       </div>

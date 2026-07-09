@@ -18,14 +18,23 @@ export default function CommonCodeMgmt() {
   const [editGroupId, setEditGroupId] = useState(null);
 
   const [codes, setCodes] = useState([]);
-  const [hasChanges, setHasChanges] = useState(false);
   const gridRef = useRef();
 
   const loadCodes = useCallback(async (groupId) => {
     const r = await commonCodeApi.getCodes(groupId);
     setCodes(r.data);
-    setHasChanges(false);
   }, []);
+
+  // 편집 중인 셀을 커밋시키고, 저장/이동/새로고침 시점에 실제로 반영해야 할 변경이 있는지 확인
+  const hasPendingChanges = () => {
+    if (!gridRef.current?.api) return false;
+    gridRef.current.api.stopEditing();
+    let dirty = false;
+    gridRef.current.api.forEachNode((node) => {
+      if (node.data._isNew || node.data._isDirty) dirty = true;
+    });
+    return dirty;
+  };
 
   const loadGroups = useCallback(async () => {
     const r = await commonCodeApi.getGroups();
@@ -39,7 +48,7 @@ export default function CommonCodeMgmt() {
   useEffect(() => { loadGroups(); }, [loadGroups]);
 
   const handleGroupClick = (group) => {
-    if (hasChanges && !window.confirm('저장하지 않은 변경사항이 있습니다. 이동하시겠습니까?')) return;
+    if (hasPendingChanges() && !window.confirm('저장하지 않은 변경사항이 있습니다. 이동하시겠습니까?')) return;
     setSelectedGroup(group);
     loadCodes(group.id);
   };
@@ -88,7 +97,6 @@ export default function CommonCodeMgmt() {
       code: '', codeName: '', description: '', useYn: 'Y',
     };
     setCodes((prev) => [...prev, newRow]);
-    setHasChanges(true);
     setTimeout(() => {
       gridRef.current?.api?.ensureIndexVisible(newIndex, 'bottom');
       gridRef.current?.api?.startEditingCell({ rowIndex: newIndex, colKey: 'code' });
@@ -120,7 +128,7 @@ export default function CommonCodeMgmt() {
   };
 
   const handleCodeRefresh = () => {
-    if (hasChanges && !window.confirm('저장하지 않은 변경사항이 있습니다. 새로고침하시겠습니까?')) return;
+    if (hasPendingChanges() && !window.confirm('저장하지 않은 변경사항이 있습니다. 새로고침하시겠습니까?')) return;
     loadCodes(selectedGroup.id);
   };
 
@@ -131,7 +139,6 @@ export default function CommonCodeMgmt() {
       params.data._isDirty = true;
       params.api.redrawRows({ rowNodes: [params.node] });
     }
-    setHasChanges(true);
   }, []);
 
   const getRowId = useCallback((params) => {
@@ -201,7 +208,7 @@ export default function CommonCodeMgmt() {
                 {isAdmin && (
                   <div className="code-group-actions">
                     <button onClick={(e) => openGroupEdit(group, e)} title="수정">✏</button>
-                    <button disabled title="수정에서 사용여부를 N으로 변경해주세요">✕</button>
+                    <button disabled title="사용불가한 기능입니다">✕</button>
                   </div>
                 )}
               </div>
@@ -222,8 +229,8 @@ export default function CommonCodeMgmt() {
                 </span>
                 <div className="toolbar-btns">
                   {isAdmin && <button className="btn btn-primary" onClick={handleAddCode}>행 추가</button>}
-                  {isAdmin && <button className="btn btn-success" onClick={handleCodeSave} disabled={!hasChanges}>저장</button>}
-                  {isAdmin && <button className="btn btn-danger" disabled title="그리드에서 사용여부를 N으로 변경 후 저장해주세요">삭제</button>}
+                  {isAdmin && <button className="btn btn-success" onClick={handleCodeSave}>저장</button>}
+                  {isAdmin && <button className="btn btn-danger" disabled title="사용불가한 기능입니다">삭제</button>}
                   <button className="btn btn-secondary" onClick={handleCodeRefresh}>새로고침</button>
                 </div>
               </div>
@@ -271,7 +278,7 @@ export default function CommonCodeMgmt() {
               </div>
               <div className="form-row">
                 <label>사용여부</label>
-                <select value={groupForm.useYn} onChange={gf('useYn')}>
+                <select value={groupForm.useYn} onChange={gf('useYn')} disabled title="사용불가한 기능입니다">
                   <option value="Y">Y</option>
                   <option value="N">N</option>
                 </select>
