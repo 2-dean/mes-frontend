@@ -6,20 +6,26 @@ import { useAuth } from '../../context/AuthContext';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
+const defaultSearch = { clientName: '', useYn: 'Y' };
+
 export default function ClientList() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'ADMIN';
   const [rows, setRows] = useState([]);
   const [hasChanges, setHasChanges] = useState(false);
+  const [search, setSearch] = useState(defaultSearch);
   const gridRef = useRef();
 
-  const load = useCallback(async () => {
-    const r = await clientApi.getAll();
+  const load = (params = search) => clientApi.getAll(params).then((r) => {
     setRows(r.data);
     setHasChanges(false);
-  }, []);
+  });
 
-  useEffect(() => { load(); }, [load]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { load(); }, []);
+
+  const sf = (key) => (e) => setSearch((s) => ({ ...s, [key]: e.target.value }));
+  const handleSearch = () => load(search);
 
   const handleAddRow = () => {
     const newRow = {
@@ -169,6 +175,32 @@ export default function ClientList() {
           {isAdmin && <button className="btn btn-danger" onClick={handleDelete}>삭제</button>}
           <button className="btn btn-secondary" onClick={handleRefresh}>새로고침</button>
         </div>
+      </div>
+
+      <div className="search-bar">
+        <label>거래처명</label>
+        <input
+          value={search.clientName}
+          onChange={sf('clientName')}
+          onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+          placeholder="거래처명 검색"
+        />
+        <label>사용여부</label>
+        <span className="radio-group">
+          {[['', '전체'], ['Y', '사용'], ['N', '미사용']].map(([value, label]) => (
+            <label key={value || 'all'} className="radio-item">
+              <input
+                type="radio"
+                name="useYn"
+                value={value}
+                checked={search.useYn === value}
+                onChange={sf('useYn')}
+              />
+              {label}
+            </label>
+          ))}
+        </span>
+        <button className="btn btn-primary" onClick={handleSearch}>조회</button>
       </div>
 
       <div className="ag-theme-alpine grid-wrap">

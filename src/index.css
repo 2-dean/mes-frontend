@@ -180,6 +180,8 @@ body {
 .search-bar label { font-size: 13px; color: #475569; white-space: nowrap; }
 .search-bar span  { font-size: 13px; color: #94a3b8; }
 .search-bar input[type="date"],
+.search-bar input[type="text"],
+.search-bar input:not([type]),
 .search-bar select {
   padding: 5px 8px;
   border: 1px solid #cbd5e1;
@@ -188,6 +190,17 @@ body {
   background: #fff;
   color: #1e293b;
 }
+.search-bar .radio-group { display: inline-flex; gap: 12px; }
+.search-bar .radio-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: #1e293b;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.search-bar .radio-item input[type="radio"] { margin: 0; cursor: pointer; }
 
 /* ── Buttons ─────────────────────────────────── */
 .btn {
