@@ -76,18 +76,6 @@ export default function CommonCodeMgmt() {
     }
   };
 
-  const handleGroupDelete = async (group, e) => {
-    e.stopPropagation();
-    if (!window.confirm(`'${group.groupName}' 그룹을 삭제하시겠습니까?\n세부코드도 함께 삭제됩니다.`)) return;
-    try {
-      await commonCodeApi.deleteGroup(group.id);
-      if (selectedGroup?.id === group.id) { setSelectedGroup(null); setCodes([]); }
-      await loadGroups();
-    } catch {
-      alert('삭제 중 오류가 발생했습니다.');
-    }
-  };
-
   // ── Detail code CRUD (inline) ─────────────────────────────────────────────
 
   const handleAddCode = () => {
@@ -128,27 +116,6 @@ export default function CommonCodeMgmt() {
       await loadCodes(selectedGroup.id);
     } catch {
       alert('저장 중 오류가 발생했습니다.');
-    }
-  };
-
-  const handleCodeDelete = async () => {
-    const selected = gridRef.current.api.getSelectedRows();
-    if (!selected.length) return alert('삭제할 행을 선택하세요.');
-    if (!window.confirm(`${selected.length}건을 삭제하시겠습니까?`)) return;
-
-    const existing = selected.filter((r) => !r._isNew);
-    const unsaved = selected.filter((r) => r._isNew);
-
-    try {
-      if (existing.length) {
-        await Promise.all(existing.map((r) => commonCodeApi.deleteCode(r.id)));
-        await loadCodes(selectedGroup.id);
-      } else {
-        const ids = new Set(unsaved.map((r) => r._rowId));
-        setCodes((prev) => prev.filter((r) => !r._isNew || !ids.has(r._rowId)));
-      }
-    } catch {
-      alert('삭제 중 오류가 발생했습니다.');
     }
   };
 
@@ -234,7 +201,7 @@ export default function CommonCodeMgmt() {
                 {isAdmin && (
                   <div className="code-group-actions">
                     <button onClick={(e) => openGroupEdit(group, e)} title="수정">✏</button>
-                    <button onClick={(e) => handleGroupDelete(group, e)} title="삭제">✕</button>
+                    <button disabled title="수정에서 사용여부를 N으로 변경해주세요">✕</button>
                   </div>
                 )}
               </div>
@@ -256,7 +223,7 @@ export default function CommonCodeMgmt() {
                 <div className="toolbar-btns">
                   {isAdmin && <button className="btn btn-primary" onClick={handleAddCode}>행 추가</button>}
                   {isAdmin && <button className="btn btn-success" onClick={handleCodeSave} disabled={!hasChanges}>저장</button>}
-                  {isAdmin && <button className="btn btn-danger" onClick={handleCodeDelete}>삭제</button>}
+                  {isAdmin && <button className="btn btn-danger" disabled title="그리드에서 사용여부를 N으로 변경 후 저장해주세요">삭제</button>}
                   <button className="btn btn-secondary" onClick={handleCodeRefresh}>새로고침</button>
                 </div>
               </div>

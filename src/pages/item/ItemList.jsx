@@ -16,15 +16,23 @@ export default function ItemList() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'ADMIN';
   const [rows, setRows] = useState([]);
-  const [hasChanges, setHasChanges] = useState(false);
   const [units, setUnits] = useState([]);
   const [search, setSearch] = useState(defaultSearch);
   const gridRef = useRef();
 
   const load = (params = search) => itemApi.getAll(params).then((r) => {
     setRows(r.data);
-    setHasChanges(false);
   });
+
+  // 편집 중인 셀을 커밋시키고, 저장/새로고침 시점에 실제로 반영해야 할 변경이 있는지 확인
+  const hasPendingChanges = () => {
+    gridRef.current.api.stopEditing();
+    let dirty = false;
+    gridRef.current.api.forEachNode((node) => {
+      if (node.data._isNew || node.data._isDirty) dirty = true;
+    });
+    return dirty;
+  };
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, []);
@@ -45,7 +53,6 @@ export default function ItemList() {
       itemCode: '', itemName: '', spec: '', unit: units[0] || '', unitPrice: 0, incentiveRate: 0, useYn: 'Y',
     };
     setRows((prev) => [newRow, ...prev]);
-    setHasChanges(true);
     setTimeout(() => {
       gridRef.current?.api?.startEditingCell({ rowIndex: 0, colKey: 'itemCode' });
     }, 100);
@@ -101,7 +108,7 @@ export default function ItemList() {
   };
 
   const handleRefresh = () => {
-    if (hasChanges && !window.confirm('저장하지 않은 변경사항이 있습니다. 새로고침하시겠습니까?')) return;
+    if (hasPendingChanges() && !window.confirm('저장하지 않은 변경사항이 있습니다. 새로고침하시겠습니까?')) return;
     load();
   };
 
@@ -110,7 +117,6 @@ export default function ItemList() {
       params.data._isDirty = true;
       params.api.redrawRows({ rowNodes: [params.node] });
     }
-    setHasChanges(true);
   }, []);
 
   const getRowId = useCallback((params) => {
@@ -179,7 +185,7 @@ export default function ItemList() {
         <h2 className="page-title">품목관리</h2>
         <div className="toolbar-btns">
           {isAdmin && <button className="btn btn-primary" onClick={handleAddRow}>행 추가</button>}
-          {isAdmin && <button className="btn btn-success" onClick={handleSave} disabled={!hasChanges}>저장</button>}
+          {isAdmin && <button className="btn btn-success" onClick={handleSave}>저장</button>}
           {isAdmin && <button className="btn btn-danger" onClick={handleDelete}>삭제</button>}
           <button className="btn btn-secondary" onClick={handleRefresh}>새로고침</button>
         </div>

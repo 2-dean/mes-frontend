@@ -9,18 +9,46 @@ ModuleRegistry.registerModules([AllCommunityModule]);
 
 const defaultSearch = { clientName: '', useYn: 'Y' };
 
+// 사업자번호/전화번호는 DB엔 숫자만 저장하고, 그리드에는 하이픈을 넣어 보여준다.
+const onlyDigits = (v) => (v || '').replace(/[^0-9]/g, '');
+
+const formatBizNo = (digits) => (digits.length === 10 ? `${digits.slice(0, 3)}-${digits.slice(3, 5)}-${digits.slice(5)}` : digits);
+
+const formatTel = (digits) => {
+  if (digits.length === 11) return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
+  if (digits.length === 10) {
+    return digits.startsWith('02')
+      ? `${digits.slice(0, 2)}-${digits.slice(2, 6)}-${digits.slice(6)}`
+      : `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
+  }
+  if (digits.length === 9) {
+    return digits.startsWith('02')
+      ? `${digits.slice(0, 2)}-${digits.slice(2, 5)}-${digits.slice(5)}`
+      : `${digits.slice(0, 3)}-${digits.slice(3, 5)}-${digits.slice(5)}`;
+  }
+  return digits;
+};
+
 export default function ClientList() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'ADMIN';
   const [rows, setRows] = useState([]);
-  const [hasChanges, setHasChanges] = useState(false);
   const [search, setSearch] = useState(defaultSearch);
   const gridRef = useRef();
 
   const load = (params = search) => clientApi.getAll(params).then((r) => {
     setRows(r.data);
-    setHasChanges(false);
   });
+
+  // 편집 중인 셀을 커밋시키고, 저장/새로고침 시점에 실제로 반영해야 할 변경이 있는지 확인
+  const hasPendingChanges = () => {
+    gridRef.current.api.stopEditing();
+    let dirty = false;
+    gridRef.current.api.forEachNode((node) => {
+      if (node.data._isNew || node.data._isDirty) dirty = true;
+    });
+    return dirty;
+  };
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, []);
@@ -36,7 +64,6 @@ export default function ClientList() {
       tel: '', zipCode: '', address: '', addressDetail: '', useYn: 'Y',
     };
     setRows((prev) => [newRow, ...prev]);
-    setHasChanges(true);
     setTimeout(() => {
       gridRef.current?.api?.startEditingCell({ rowIndex: 0, colKey: 'clientCode' });
     }, 100);
@@ -92,7 +119,7 @@ export default function ClientList() {
   };
 
   const handleRefresh = () => {
-    if (hasChanges && !window.confirm('저장하지 않은 변경사항이 있습니다. 새로고침하시겠습니까?')) return;
+    if (hasPendingChanges() && !window.confirm('저장하지 않은 변경사항이 있습니다. 새로고침하시겠습니까?')) return;
     load();
   };
 
@@ -101,7 +128,6 @@ export default function ClientList() {
       params.data._isDirty = true;
       params.api.redrawRows({ rowNodes: [params.node] });
     }
-    setHasChanges(true);
   }, []);
 
   const getRowId = useCallback((params) => {
@@ -137,15 +163,14 @@ export default function ClientList() {
     {
       field: 'bizNo', headerName: '사업자번호', width: 130, editable: true,
       cellEditorParams: { maxLength: 12 },
-      valueParser: (p) => p.newValue.replace(/[^0-9]/g, '').slice(0, 10),
-      valueFormatter: (p) => {
-        const digits = (p.value || '').replace(/[^0-9]/g, '');
-        return digits.length === 10 ? `${digits.slice(0, 3)}-${digits.slice(3, 5)}-${digits.slice(5)}` : (p.value || '');
-      },
+      valueParser: (p) => onlyDigits(p.newValue).slice(0, 10),
+      valueFormatter: (p) => formatBizNo(onlyDigits(p.value)),
     },
     {
       field: 'tel', headerName: '전화번호', width: 130, editable: true,
-      cellEditorParams: { maxLength: 20 },
+      cellEditorParams: { maxLength: 13 },
+      valueParser: (p) => onlyDigits(p.newValue).slice(0, 11),
+      valueFormatter: (p) => formatTel(onlyDigits(p.value)),
     },
     { field: 'zipCode', headerName: '우편번호', width: 90, editable: true },
     {
@@ -179,7 +204,7 @@ export default function ClientList() {
         <h2 className="page-title">거래처관리</h2>
         <div className="toolbar-btns">
           {isAdmin && <button className="btn btn-primary" onClick={handleAddRow}>행 추가</button>}
-          {isAdmin && <button className="btn btn-success" onClick={handleSave} disabled={!hasChanges}>저장</button>}
+          {isAdmin && <button className="btn btn-success" onClick={handleSave}>저장</button>}
           {isAdmin && <button className="btn btn-danger" onClick={handleDelete}>삭제</button>}
           <button className="btn btn-secondary" onClick={handleRefresh}>새로고침</button>
         </div>
