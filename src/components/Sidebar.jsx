@@ -4,14 +4,13 @@ const MENU_ITEMS = [
   { type: 'category', label: '기준정보' },
   { id: 'item', label: '품목관리', icon: '📦' },
   { id: 'client', label: '거래처관리', icon: '🏢' },
-  { id: 'commoncode', label: '공통코드관리', icon: '🗂️', adminOnly: true },
-  { id: 'user', label: '사용자관리', icon: '👤', adminOnly: true },
   { type: 'category', label: '생산관리' },
   { id: 'workorder', label: '작업지시', icon: '📋' },
   { id: 'prodresult', label: '생산실적', icon: '🏭' },
-  { type: 'category', label: '마감관리' },
   { id: 'dailyclose', label: '작업실적현황', icon: '📅' },
-  { id: 'incentive', label: '인센티브현황', icon: '💰' },
+  { type: 'category', label: '환경설정' },
+  { id: 'commoncode', label: '공통코드관리', icon: '🗂️', adminOnly: true },
+  { id: 'user', label: '사용자관리', icon: '👤', adminOnly: true },
 ];
 
 export default function Sidebar({ activeTab, onMenuClick }) {

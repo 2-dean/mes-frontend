@@ -4,6 +4,7 @@ import { ModuleRegistry, AllCommunityModule } from 'ag-grid-community';
 import { workOrderApi } from '../../api/workOrderApi';
 import { itemApi } from '../../api/itemApi';
 import { commonCodeApi } from '../../api/commonCodeApi';
+import { errorMessage } from '../../api/errorMessage';
 import { useAuth } from '../../context/AuthContext';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
@@ -71,7 +72,7 @@ export default function WorkOrderList() {
   };
 
   const handleSave = async () => {
-    if (!form.workOrderNo || !form.itemId) return alert('작업지시번호/품목은 필수입니다.');
+    if (!form.itemId) return alert('품목은 필수입니다.');
     const payload = { ...form, item: { id: Number(form.itemId) } };
     if (editId) await workOrderApi.update(editId, payload);
     else await workOrderApi.create(payload);
@@ -83,8 +84,12 @@ export default function WorkOrderList() {
     const sel = gridRef.current.api.getSelectedRows();
     if (!sel.length) return alert('삭제할 행을 선택하세요.');
     if (!window.confirm(`${sel.length}건을 삭제하시겠습니까?`)) return;
-    await Promise.all(sel.map((r) => workOrderApi.delete(r.id)));
-    load(search);
+    try {
+      await Promise.all(sel.map((r) => workOrderApi.delete(r.id)));
+      load(search);
+    } catch (e) {
+      alert(errorMessage(e, '삭제에 실패했습니다.'));
+    }
   };
 
   const handleStart = async () => {
@@ -104,7 +109,11 @@ export default function WorkOrderList() {
   const handleCancelConfirm = async () => {
     const sel = gridRef.current.api.getSelectedRows();
     if (!sel.length) return alert('행을 선택하세요.');
-    await Promise.all(sel.map((r) => workOrderApi.cancelConfirm(r.id)));
+    try {
+      await Promise.all(sel.map((r) => workOrderApi.cancelConfirm(r.id)));
+    } catch (e) {
+      alert(errorMessage(e, '마감취소에 실패했습니다.'));
+    }
     load(search);
   };
 
@@ -122,15 +131,16 @@ export default function WorkOrderList() {
     { field: 'itemCode', headerName: '품목코드', width: 130 },
     { field: 'itemName', headerName: '품목명', flex: 1, minWidth: 140 },
     { field: 'planQty', headerName: '계획수량', width: 110 },
+    { field: 'remark', headerName: '비고', flex: 1, minWidth: 140 },
     {
       field: 'status', headerName: '상태', width: 110,
       cellRenderer: (p) => statusBadge(p.value),
     },
     {
-      field: 'confirmYn', headerName: '확정', width: 90,
+      field: 'confirmYn', headerName: '마감', width: 90,
       cellRenderer: (p) => (
         <span className={`badge ${p.value === 'Y' ? 'badge-done' : 'badge-wait'}`}>
-          {p.value === 'Y' ? '확정' : '미확정'}
+          {p.value === 'Y' ? '마감' : '미마감'}
         </span>
       ),
     },
@@ -147,13 +157,9 @@ export default function WorkOrderList() {
     ...(isAdmin ? [{
       headerName: '수정', width: 90,
       cellRenderer: (p) => (
-        <button
-          className="btn-grid"
-          onClick={() => openEdit(p.data)}
-          disabled={!isEditable(p.data)}
-        >
-          수정
-        </button>
+        isEditable(p.data)
+          ? <button className="btn-grid" onClick={() => openEdit(p.data)}>수정</button>
+          : null
       ),
     }] : []),
   ];
@@ -175,11 +181,16 @@ export default function WorkOrderList() {
           {isAdmin && (
             <button className="btn btn-success" onClick={handleConfirm}
               disabled={!selectedRows.length || selectedRows.some(r => r.status !== 'DONE')}>
-              확정
+              작업마감
             </button>
           )}
-          {isAdmin && <button className="btn btn-warning" onClick={handleCancelConfirm}>확정취소</button>}
-          {isAdmin && <button className="btn btn-danger" onClick={handleDelete}>삭제</button>}
+          {isAdmin && <button className="btn btn-warning" onClick={handleCancelConfirm}>마감취소</button>}
+          {isAdmin && (
+            <button className="btn btn-danger" onClick={handleDelete}
+              disabled={!selectedRows.length || selectedRows.some(r => r.status !== 'WAIT')}>
+              삭제
+            </button>
+          )}
           <button className="btn btn-secondary" onClick={() => load(search)}>새로고침</button>
         </div>
       </div>
@@ -194,11 +205,11 @@ export default function WorkOrderList() {
           <option value="IN_PROGRESS">진행중</option>
           <option value="DONE">완료</option>
         </select>
-        <label>확정여부</label>
+        <label>마감여부</label>
         <select value={search.confirmYn} onChange={sf('confirmYn')}>
           <option value="">전체</option>
-          <option value="N">미확정</option>
-          <option value="Y">확정</option>
+          <option value="N">미마감</option>
+          <option value="Y">마감</option>
         </select>
         <button className="btn btn-primary" onClick={handleSearch}>조회</button>
       </div>
@@ -223,10 +234,12 @@ export default function WorkOrderList() {
               <button className="modal-close" onClick={() => setModal(false)}>×</button>
             </div>
             <div className="modal-body">
-              <div className="form-row">
-                <label>작업지시번호 *</label>
-                <input value={form.workOrderNo} onChange={f('workOrderNo')} disabled={!!editId} />
-              </div>
+              {editId && (
+                <div className="form-row">
+                  <label>작업지시번호</label>
+                  <input value={form.workOrderNo} disabled />
+                </div>
+              )}
               <div className="form-row">
                 <label>품목 *</label>
                 <select value={form.itemId} onChange={f('itemId')}>
@@ -244,14 +257,16 @@ export default function WorkOrderList() {
                 <label>작업일자</label>
                 <input type="date" value={form.planDate} disabled />
               </div>
-              <div className="form-row">
-                <label>상태</label>
-                <select value={form.status} onChange={f('status')}>
-                  <option value="WAIT">대기</option>
-                  <option value="IN_PROGRESS">진행중</option>
-                  <option value="DONE">완료</option>
-                </select>
-              </div>
+              {editId && (
+                <div className="form-row">
+                  <label>상태</label>
+                  <select value={form.status} onChange={f('status')}>
+                    <option value="WAIT">대기</option>
+                    <option value="IN_PROGRESS">진행중</option>
+                    <option value="DONE">완료</option>
+                  </select>
+                </div>
+              )}
               <div className="form-row">
                 <label>생산라인</label>
                 <select value={form.line} onChange={f('line')}>

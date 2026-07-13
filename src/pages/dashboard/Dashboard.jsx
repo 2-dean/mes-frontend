@@ -4,9 +4,8 @@ import {
   CategoryScale, LinearScale, BarElement, ArcElement,
   Title, Tooltip, Legend, LineElement, PointElement,
 } from 'chart.js';
-import { Bar, Doughnut, Line } from 'react-chartjs-2';
+import { Doughnut, Line } from 'react-chartjs-2';
 import { workOrderApi } from '../../api/workOrderApi';
-import { prodIncentiveApi } from '../../api/prodIncentiveApi';
 import { prodResultApi } from '../../api/prodResultApi';
 
 ChartJS.register(
@@ -23,17 +22,11 @@ const toLocalDateStr = (d) => {
 const today = () => toLocalDateStr(new Date());
 
 export default function Dashboard() {
-  const [date, setDate] = useState(today());
   const [workOrders, setWorkOrders] = useState([]);
-  const [incentives, setIncentives] = useState([]);
   const [results, setResults] = useState([]);
 
   useEffect(() => {
-    workOrderApi.getAll({ startDate: date, endDate: date }).then((r) => setWorkOrders(r.data));
-  }, [date]);
-
-  useEffect(() => {
-    prodIncentiveApi.getAll().then((r) => setIncentives(r.data));
+    workOrderApi.getAll({ startDate: today(), endDate: today() }).then((r) => setWorkOrders(r.data));
     prodResultApi.getAll().then((r) => setResults(r.data));
   }, []);
 
@@ -74,24 +67,6 @@ export default function Dashboard() {
     }],
   };
 
-  // 작업자별 인센티브 Top5
-  const workerMap = incentives.reduce((acc, i) => {
-    acc[i.worker] = (acc[i.worker] || 0) + (i.amount || 0);
-    return acc;
-  }, {});
-  const top5 = Object.entries(workerMap)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5);
-
-  const incChartData = {
-    labels: top5.map(([w]) => w),
-    datasets: [{
-      label: '인센티브 금액(원)',
-      data: top5.map(([, v]) => v),
-      backgroundColor: ['#0d6efd', '#198754', '#ffc107', '#dc3545', '#6f42c1'],
-    }],
-  };
-
   const summaryCards = [
     { label: '당일 작업지시', value: workOrders.length, color: '#0d6efd' },
     { label: '진행중', value: statusCount.IN_PROGRESS || 0, color: '#ffc107' },
@@ -103,10 +78,6 @@ export default function Dashboard() {
     <div className="page-wrap">
       <div className="page-toolbar" style={{ marginBottom: 20 }}>
         <h2 className="page-title">대시보드</h2>
-        <div className="form-group-inline">
-          <label>작업지시 조회일자</label>
-          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-        </div>
       </div>
 
       <div className="summary-cards">
@@ -131,19 +102,6 @@ export default function Dashboard() {
           <h3 className="chart-title">최근 7일 생산수량</h3>
           <Line
             data={prodChartData}
-            options={{
-              responsive: true,
-              maintainAspectRatio: false,
-              plugins: { legend: { display: false } },
-              scales: { y: { beginAtZero: true } },
-            }}
-          />
-        </div>
-
-        <div className="chart-card chart-card-wide">
-          <h3 className="chart-title">작업자별 인센티브 Top 5</h3>
-          <Bar
-            data={incChartData}
             options={{
               responsive: true,
               maintainAspectRatio: false,

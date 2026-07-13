@@ -4,6 +4,7 @@ import { ModuleRegistry, AllCommunityModule } from 'ag-grid-community';
 import { prodResultApi } from '../../api/prodResultApi';
 import { dailyCloseApi } from '../../api/dailyCloseApi';
 import { workOrderApi } from '../../api/workOrderApi';
+import { userApi } from '../../api/userApi';
 import { errorMessage } from '../../api/errorMessage';
 import { useAuth } from '../../context/AuthContext';
 
@@ -28,19 +29,31 @@ export default function DailyClose() {
   const [workOrders, setWorkOrders] = useState([]); // 해당일자 확정된 작업지시
   const [prodResults, setProdResults] = useState([]); // 해당일자 생산실적 전체 (작업자별)
   const [closes, setCloses] = useState([]);
+  const [workers, setWorkers] = useState([]);
   const [selectedWorkOrderId, setSelectedWorkOrderId] = useState(null);
 
   const isClosed = closes.some((c) => c.closeDate === closeDate && c.closeYn === 'Y');
 
+  const workerLabel = (username) => {
+    if (!username) return '';
+    const w = workers.find((x) => x.username === username);
+    return w ? `${w.name} (${w.username})` : username;
+  };
+
   const loadData = (date = closeDate) => {
-    workOrderApi.getAll({ startDate: date, endDate: date, confirmYn: 'Y' }).then((r) => setWorkOrders(r.data));
+    workOrderApi.getAll({ startDate: date, endDate: date, confirmYn: 'Y' }).then((r) => {
+      setWorkOrders(r.data);
+      setSelectedWorkOrderId(r.data.length ? r.data[0].id : null);
+    });
     prodResultApi.search({ prodDate: date }).then((r) => setProdResults(r.data));
-    setSelectedWorkOrderId(null);
   };
 
   const loadCloses = () => dailyCloseApi.getAll().then((r) => setCloses(r.data));
 
-  useEffect(() => { loadCloses(); }, []);
+  useEffect(() => {
+    loadCloses();
+    userApi.getSimple().then((r) => setWorkers(r.data));
+  }, []);
   useEffect(() => { loadData(closeDate); }, [closeDate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleClose = async () => {
@@ -103,7 +116,7 @@ export default function DailyClose() {
   );
 
   const detailColDefs = [
-    { field: 'worker', headerName: '작업자', width: 110 },
+    { field: 'worker', headerName: '작업자', width: 150, valueFormatter: (p) => workerLabel(p.value) },
     { field: 'prodDate', headerName: '생산일자', width: 130 },
     { field: 'scanQty', headerName: '스캔수량', width: 110 },
     { field: 'manualQty', headerName: '수동수량', width: 110 },
