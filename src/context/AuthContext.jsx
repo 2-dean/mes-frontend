@@ -1,5 +1,5 @@
 import { createContext, useContext, useState } from 'react';
-import axios from 'axios';
+import api from '../api/axios'; // baseURL(VITE_API_URL)이 적용된 공용 axios 인스턴스 사용
 
 const AuthContext = createContext(null);
 
@@ -10,7 +10,7 @@ export function AuthProvider({ children }) {
   });
 
   const login = async (username, password) => {
-    const res = await axios.post('/api/auth/login', { username, password });
+    const res = await api.post('/api/auth/login', { username, password });
     const { token, name, role } = res.data;
     const userData = { username, name, role, token };
     localStorage.setItem('mes_user', JSON.stringify(userData));
